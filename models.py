@@ -9,7 +9,7 @@ class Roles(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
     status = db.Column(db.Boolean, default=True)
-    accounts = db.relationship("Account", backref="role")
+    accounts = db.relationship("Account", backref="roles")
 
     def serialize(self):
         return {

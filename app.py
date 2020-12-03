@@ -57,7 +57,7 @@ def register():
         account.role_id = role
         account.save()
 
-        return jsonify(Account.serialize()), 201
+        return jsonify(account.serialize()), 201
 
 
 if __name__ == '__main__':
