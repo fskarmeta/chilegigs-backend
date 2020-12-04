@@ -6,6 +6,25 @@ from sqlalchemy.sql import expression
 db = SQLAlchemy()
 
 
+
+
+emptyArr = [{"label": "empty", "options": [
+{"value": "empty", "label": "empty", "group": "empty"}]}]
+
+
+class ObjetosGlobales(db.Model):
+    __tablename__ = "objetoglobales"
+    id = db.Column(db.Integer, primary_key=True)
+    requisitos = db.Column(db.Text())
+    home = db.Column(db.Text())
+
+    def save(self):
+        self.requisitos = json.dumps(emptyArr) 
+        self.home = json.dumps(emptyArr)
+        db.session.add(self)
+        db.session.commit()    
+    
+
 class Roles(db.Model):
     __tablename__ = "roles"
     id = db.Column(db.Integer, primary_key=True)
@@ -19,7 +38,9 @@ class Roles(db.Model):
             "name": self.name,
             "status": self.status
         }
-
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
 
 class Account(db.Model):
     __tablename__ = "account"
@@ -28,6 +49,9 @@ class Account(db.Model):
     username = db.Column(db.String(100), unique=True)
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(100))
+    client_profile = db.relationship('ClientProfile', backref="clientaccount", lazy=True)
+    dj_profile = db.relationship('DjProfile', backref="djaccount", lazy=True)
+  
 
     def serialize(self):
         return {
@@ -52,7 +76,7 @@ class Account(db.Model):
 class DjProfile(db.Model):
     __tablename__ = "djprofile"
     id = db.Column(db.Integer, primary_key=True)
-    dj_id = db.Column(db.Integer, ForeignKey('account.id'))
+    dj_id = db.Column(db.Integer, ForeignKey('account.id', ondelete="CASCADE"))
     artista = db.Column(db.String(100))
     ciudad = db.Column(db.String(100))
     pais = db.Column(db.String(100))
@@ -74,7 +98,7 @@ class DjProfile(db.Model):
     suma_rating = db.Column(db.Integer, nullable=True, default=0)
     contrataciones = db.Column(db.Integer, nullable=True, default=0)
     feedback = db.Column(db.String(1000), nullable=True, default="[]")
-    # cuenta = db.relationship('Account', backref="djprofile", lazy=True)
+    
 
     def serialize(self):
         return {
@@ -100,8 +124,8 @@ class DjProfile(db.Model):
             "datos": json.loads(self.datos),
             "suma_rating": self.suma_rating,
             "contrataciones": self.contrataciones,
-            "feedback": json.loads(self.feedback)
-            # "cuenta": self.account.serialize()   
+            "feedback": json.loads(self.feedback),
+            "djaccount": self.djaccount.serialize()   
         }
     
     def card(self):
@@ -134,7 +158,7 @@ class DjProfile(db.Model):
 class ClientProfile(db.Model):
     __tablename__ = "clientprofile"
     id = db.Column(db.Integer, primary_key=True)
-    client_id = db.Column(db.Integer, ForeignKey('account.id'))
+    client_id = db.Column(db.Integer, ForeignKey('account.id', ondelete="CASCADE"))
     nombre = db.Column(db.String(100))
     apellido = db.Column(db.String(100))
     rut = db.Column(db.String(100))
@@ -145,7 +169,7 @@ class ClientProfile(db.Model):
     suma_rating = db.Column(db.Integer, nullable=True, default=0)
     contrataciones = db.Column(db.Integer, nullable=True, default=0)
     feedback = db.Column(db.String(1000), nullable=True, default="[]")
-    # cuenta = db.relationship('Account', backref="clientprofile", lazy=True)
+  
 
     def serialize(self):
         return {
@@ -160,7 +184,8 @@ class ClientProfile(db.Model):
             "biografia": self.biografia,
             "suma_rating": self.suma_rating,
             "contrataciones": self.contrataciones,
-            "feedback": json.loads(self.feedback)
+            "feedback": json.loads(self.feedback),
+            "clientaccount": self.clientaccount.serialize()
         }
     
     def save(self):
@@ -173,3 +198,4 @@ class ClientProfile(db.Model):
     def delete(self):
         db.session.delete(self)
         db.session.commit()
+

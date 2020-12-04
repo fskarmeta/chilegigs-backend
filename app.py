@@ -3,7 +3,7 @@ import json
 from flask import Flask, render_template, request, jsonify
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
-from models import db, Roles, Account, DjProfile, ClientProfile
+from models import db, Roles, Account, DjProfile, ClientProfile, ObjetosGlobales
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, get_raw_jwt
@@ -85,7 +85,7 @@ def register():
         else:
            return jsonify({"msg": "No existe tal cuenta"}) 
 
-## Actualizar nombre de cuenta de usuario
+## Actualizar nombre de cuenta de usuario (esto no va)
 @app.route('/user/update/username', methods=['PUT'])
 @jwt_required
 def updateUsername():
@@ -113,7 +113,7 @@ def updatePassword():
     else:
         return jsonify({"msg": "Tienes que volver a logearte"}), 401
 
-## Actualizar Email de cuenta de usuario
+## Actualizar Email de cuenta de usuario (validar que no exista ya)
 @app.route('/user/update/username', methods=['PUT'])
 @jwt_required
 def updateEmail():
@@ -298,5 +298,23 @@ def profiles():
     profiles = list(map(lambda profile: profile.card(), profiles))
     return jsonify(profiles), 200
 
+@manager.command
+def load_globales():
+    role = Roles()
+    role.name = "admin"
+    role.status = True
+    role.save()
+    role = Roles()
+    role.name = "dj"
+    role.status = True
+    role.save()
+    role = Roles()
+    role.name = "client"
+    role.status = True
+    role.save()
+    og = ObjetosGlobales()
+    og.save()
+    print("Objetos globales cargados")
+    
 if __name__ == '__main__':
     manager.run()
