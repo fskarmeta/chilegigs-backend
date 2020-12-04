@@ -74,7 +74,7 @@ class DjProfile(db.Model):
     suma_rating = db.Column(db.Integer, nullable=True, default=0)
     contrataciones = db.Column(db.Integer, nullable=True, default=0)
     feedback = db.Column(db.String(1000), nullable=True, default="[]")
-    cuenta = db.relationship('Account', backref="djprofile", lazy=True)
+    # cuenta = db.relationship('Account', backref="djprofile", lazy=True)
 
     def serialize(self):
         return {
@@ -100,10 +100,54 @@ class DjProfile(db.Model):
             "datos": json.loads(self.datos),
             "suma_rating": self.suma_rating,
             "contrataciones": self.contrataciones,
-            "feedback": json.loads(self.feedback),
+            "feedback": json.loads(self.feedback)
             # "cuenta": self.account.serialize()   
         }
 
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def update(self):
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+
+class ClientProfile(db.Model):
+    __tablename__ = "clientprofile"
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, ForeignKey('account.id'))
+    nombre = db.Column(db.String(100))
+    apellido = db.Column(db.String(100))
+    rut = db.Column(db.String(100))
+    nacionalidad = db.Column(db.String(100))
+    ciudad = db.Column(db.String(100))
+    pais = db.Column(db.String(100))
+    biografia = db.Column(db.String(100), nullable=True, default="")
+    suma_rating = db.Column(db.Integer, nullable=True, default=0)
+    contrataciones = db.Column(db.Integer, nullable=True, default=0)
+    feedback = db.Column(db.String(1000), nullable=True, default="[]")
+    # cuenta = db.relationship('Account', backref="clientprofile", lazy=True)
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "client_id": self.client_id,
+            "nombre": self.nombre,
+            "apellido": self.apellido,
+            "rut": self.rut,
+            "nacionalidad": self.nacionalidad,
+            "ciudad": self.ciudad,
+            "pais": self.pais,
+            "biografia": self.biografia,
+            "suma_rating": self.suma_rating,
+            "contrataciones": self.contrataciones,
+            "feedback": json.loads(self.feedback)
+        }
+    
     def save(self):
         db.session.add(self)
         db.session.commit()
