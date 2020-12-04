@@ -232,7 +232,28 @@ def profile():
                 return jsonify(client.serialize()), 201
 
         else:
-            return jsonify({"msg": "usuario no es un DJ o Cliente"})
+            return jsonify({"msg": "Usuario no es un DJ o Cliente"})
+
+
+
+## Ruta para recibir un perfil completo de DJ (solo para usuario logeado)
+@app.route('/profile/<int:dj_id>', methods=['GET'])
+@jwt_required
+def getprofile(dj_id):
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first()
+        if account.role_id == 1 or account.role_id == 2 or account.role_id == 3:
+            profile = DjProfile.query.filter_by(dj_id=dj_id).first()
+            return jsonify(profile.serialize()), 201
+        else:
+            return jsonify({"msg": "Porfavor iniciar session o crear cuenta para ver este contenido"}), 400
+
+## Recibir todas las cartas de perfil
+@app.route('/profiles', methods=['GET'])
+def profiles():
+    profiles = DjProfile.query.all()
+    profiles = list(map(lambda profile: profile.card(), profiles))
+    return jsonify(profiles), 200
 
 if __name__ == '__main__':
     manager.run()

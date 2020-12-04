@@ -103,6 +103,21 @@ class DjProfile(db.Model):
             "feedback": json.loads(self.feedback)
             # "cuenta": self.account.serialize()   
         }
+    
+    def card(self):
+        return {
+            "id": self.id,
+            "dj_id": self.dj_id,
+            "artista": self.artista,
+            "ciudad": self.ciudad,
+            "pais": self.pais,
+            "mixcloud": self.mixcloud,
+            "soundcloud": self.soundcloud,
+            "spotify": self.spotify,
+            "generos": json.loads(self.generos),
+            "servicios": json.loads(self.servicios),
+            "tecnica": json.loads(self.tecnica)
+        }
 
     def save(self):
         db.session.add(self)
