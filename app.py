@@ -127,6 +127,7 @@ def profile():
             mixcloud = request.json.get("mixcloud")
             soundcloud = request.json.get("soundcloud")
             spotify = request.json.get("spotify")
+            generos = request.json.get("generos", None)
             servicios = request.json.get("servicios", None)
             tecnica = request.json.get("tecnica", None)
             agregar_cancion = request.json.get("agregar_cancion")
@@ -147,6 +148,8 @@ def profile():
             if not pais:
                 return jsonify({"msg": "Se requiere que incluyas un pais de origen"}), 400
             if not servicios:
+                return jsonify({"msg": "Se requiere que incluyas como minimo un genero"}), 400
+            if not servicios:
                 return jsonify({"msg": "Se requiere que incluyas como minimo un servicio"}), 400
             if not tecnica:
                 return jsonify({"msg": "Se requiere que especifiques una técnica"}), 400
@@ -159,6 +162,7 @@ def profile():
             dj.mixcloud = mixcloud
             dj.soundcloud = soundcloud
             dj.spotify = spotify
+            dj.generos = json.dumps(generos)
             dj.servicios = json.dumps(servicios)
             dj.tecnica = json.dumps(tecnica)
             dj.agregar_cancion = agregar_cancion
