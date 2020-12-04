@@ -14,4 +14,3 @@ class Base:
         environ.get('DBNAME')
     )
     JWT_SECRET_KEY = environ.get('JWT_SECRET_KEY')
-    SECRET_KEY = ''
