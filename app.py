@@ -114,16 +114,20 @@ def updatePassword():
         return jsonify({"msg": "Tienes que volver a logearte"}), 401
 
 ## Actualizar Email de cuenta de usuario (validar que no exista ya)
-@app.route('/user/update/username', methods=['PUT'])
+@app.route('/user/update/email', methods=['PUT'])
 @jwt_required
 def updateEmail():
     newemail = request.json.get("email")
     username = get_jwt_identity()
     account = Account.query.filter_by(username=username).first()
+    email = Account.query.filter_by(email=newemail).first()
     if account:
-        account.email = newemail
-        account.update()
-        return jsonify(account.serialize())
+        if email:
+            return jsonify({"msg": "Email ya esta en uso"})
+        else:
+            account.email = newemail
+            account.update()
+            return jsonify(account.serialize())
     else:
         return jsonify({"msg": "Tienes que volver a logearte"}), 401
 
@@ -158,7 +162,7 @@ def login():
         return jsonify(data), 200
 
 
-## Logout, no completamente seguro si esta funcionando. 
+## Logout
 @app.route('/user/logout', methods=['DELETE'])
 @jwt_required
 def logout():
@@ -167,7 +171,7 @@ def logout():
     blacklist.add(jti)
     return jsonify({"msg": "Successfully logged out"}), 200
 
-## crear Perfl DJ (falta backref a account? borrar account = borrar perfil)
+## crear Perfl DJ 
 @app.route('/profile', methods=['POST'])
 @jwt_required
 def profile():

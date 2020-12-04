@@ -1,16 +1,16 @@
 import json
+from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import backref
 from sqlalchemy.sql.schema import ForeignKey
-from sqlalchemy.sql import expression
+from sqlalchemy.sql import expression, func
 db = SQLAlchemy()
 
 
 
 
-emptyArr = [{"label": "empty", "options": [
-{"value": "empty", "label": "empty", "group": "empty"}]}]
-
+requisitosArray = {"equipos":[{"label":"Controladores","options":[{"value":"Ableton Push 3","label":"Ableton Push 3","group":"Controladores"},{"value":"Akai AMX - Mixing Surface","label":"Akai AMX - Mixing Surface","group":"Controladores"}]},{"label":"Mixer","options":[{"value":"10 entradas","label":"10 entradas","group":"Mixer"},{"value":"8 entradas","label":"8 entradas","group":"Mixer"}]}],"escenario":[{"label":"Mesas Ancho x Largo","options":[{"value":"Mesa 1x1 m^2","label":"Mesa 1x1 m^2","group":"Mesas Ancho x Largo"},{"value":"Mesa 1x2 m^2","label":"Mesa 1x2 m^2","group":"Mesas Ancho x Largo"},{"value":"Mesa 1x5 m^2","label":"Mesa 1x5 m^2","group":"Mesas Ancho x Largo"},{"value":"Mesa 1.5x1 m^2","label":"Mesa 1.5x1 m^2","group":"Mesas Ancho x Largo"},{"value":"Mesa 1.5x2 m^2","label":"Mesa 1.5x2 m^2","group":"Mesas Ancho x Largo"},{"value":"Mesa 1.5x3 m^2","label":"Mesa 1.5x3 m^2","group":"Mesas Ancho x Largo"}]},{"label":"Iluminación","options":[{"value":"Panel Led","label":"Panel Led","group":"Iluminación"},{"value":"Data Show","label":"Data Show","group":"Iluminación"}]}],"foodanddrinks":[{"label":"Bebestibles","options":[{"value":"Botella de Agua sin gas","label":"Botella de Agua sin gas","group":"Bebestible"},{"value":"Botella de Agua con gas","label":"Botella de Agua con gas","group":"Bebestibles"},{"value":"Coca Cola Light","label":"Coca Cola Light","group":"Bebestibles"},{"value":"Tequila","label":"Tequila","group":"Bebestibles"}]},{"label":"Snacks","options":[{"value":"Snacks Vegetarianos","label":"Snacks Vegetarianos","group":"Snacks"},{"value":"Snacks Veganos","label":"Snacks Veganos","group":"Snacks"}]}]}
+homeArray = {"header":{"image":"./img/home/header.jpg","cita":"hola buenos días"},"subheader":{"image":"./img/home/subheader.jpg","color":"black","title":"Chile gigs, el mejor lugar para Dj's","box1":{"title":"+8.000","text":"personas felices con nuestro producto"},"box2":{"title":"+300 eventos","text":"Promovemos a los mejores Dj's de Chile"}},"citas":[{"imagen":"./img/home/citas/dj1.jpg","nombre":"Dj Lucifer","cita":"Amo la musica tanto como esta página"},{"imagen":"./img/home/citas/dj2.jpg","nombre":"Dj Crap","cita":"Chilegigs es lo mejor que la ha pasado a nuestra industria"}]}
 
 class ObjetosGlobales(db.Model):
     __tablename__ = "objetoglobales"
@@ -19,8 +19,8 @@ class ObjetosGlobales(db.Model):
     home = db.Column(db.Text())
 
     def save(self):
-        self.requisitos = json.dumps(emptyArr) 
-        self.home = json.dumps(emptyArr)
+        self.requisitos = json.dumps(requisitosArray) 
+        self.home = json.dumps(homeArray)
         db.session.add(self)
         db.session.commit()    
     
@@ -49,6 +49,9 @@ class Account(db.Model):
     username = db.Column(db.String(100), unique=True)
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(100))
+    time_created = db.Column(db.DateTime, nullable=False,
+        default=datetime.utcnow)
+
     client_profile = db.relationship('ClientProfile', backref="clientaccount", lazy=True)
     dj_profile = db.relationship('DjProfile', backref="djaccount", lazy=True)
   
@@ -58,7 +61,8 @@ class Account(db.Model):
             "id": self.id,
             "role": self.roles.serialize(),
             "username": self.username,
-            "email": self.email
+            "email": self.email,
+            "time_created": self.time_created
         }
 
     def save(self):
