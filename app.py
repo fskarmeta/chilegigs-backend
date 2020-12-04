@@ -85,6 +85,49 @@ def register():
         else:
            return jsonify({"msg": "No existe tal cuenta"}) 
 
+## Actualizar nombre de cuenta de usuario
+@app.route('/user/update/username', methods=['PUT'])
+@jwt_required
+def updateUsername():
+    newusername = request.json.get("username")
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    if account:
+        account.username = newusername
+        account.update()
+        return jsonify(account.serialize())
+    else:
+        return jsonify({"msg": "Tienes que volver a logearte"}), 401
+
+## Actualizar contraseña de usuario
+@app.route('/user/update/password', methods=['PUT'])
+@jwt_required
+def updatePassword():
+    newpassword = request.json.get("password")
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    if account:
+        account.password = generate_password_hash(newpassword)
+        account.update()
+        return jsonify(account.serialize())
+    else:
+        return jsonify({"msg": "Tienes que volver a logearte"}), 401
+
+## Actualizar Email de cuenta de usuario
+@app.route('/user/update/username', methods=['PUT'])
+@jwt_required
+def updateEmail():
+    newemail = request.json.get("email")
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    if account:
+        account.email = newemail
+        account.update()
+        return jsonify(account.serialize())
+    else:
+        return jsonify({"msg": "Tienes que volver a logearte"}), 401
+
+
 #login usuario
 @app.route('/user/login', methods=['POST'])
 def login():
