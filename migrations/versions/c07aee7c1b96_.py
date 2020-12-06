@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: ad8529e84085
+Revision ID: c07aee7c1b96
 Revises: 
-Create Date: 2020-12-04 19:44:06.349817
+Create Date: 2020-12-06 17:12:19.453385
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'ad8529e84085'
+revision = 'c07aee7c1b96'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -45,6 +45,7 @@ def upgrade():
     op.create_table('clientprofile',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('client_id', sa.Integer(), nullable=True),
+    sa.Column('status', sa.String(length=50), nullable=True),
     sa.Column('nombre', sa.String(length=100), nullable=True),
     sa.Column('apellido', sa.String(length=100), nullable=True),
     sa.Column('rut', sa.String(length=100), nullable=True),
@@ -64,6 +65,7 @@ def upgrade():
     sa.Column('artista', sa.String(length=100), nullable=True),
     sa.Column('ciudad', sa.String(length=100), nullable=True),
     sa.Column('pais', sa.String(length=100), nullable=True),
+    sa.Column('status', sa.String(length=50), nullable=True),
     sa.Column('mixcloud', sa.String(length=100), nullable=True),
     sa.Column('soundcloud', sa.String(length=100), nullable=True),
     sa.Column('spotify', sa.String(length=100), nullable=True),
@@ -75,6 +77,7 @@ def upgrade():
     sa.Column('biografia', sa.String(length=1000), nullable=True),
     sa.Column('dur_min', sa.String(length=10), nullable=True),
     sa.Column('dur_max', sa.String(length=10), nullable=True),
+    sa.Column('viajes', sa.String(length=10), nullable=True),
     sa.Column('staff', sa.Integer(), nullable=True),
     sa.Column('arrienda_equipos', sa.String(length=10), nullable=True),
     sa.Column('requisitos', sa.String(length=1000), nullable=True),

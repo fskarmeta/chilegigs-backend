@@ -84,6 +84,7 @@ class DjProfile(db.Model):
     artista = db.Column(db.String(100))
     ciudad = db.Column(db.String(100))
     pais = db.Column(db.String(100))
+    status = db.Column(db.String(50), nullable=True, default="inactive")
     mixcloud = db.Column(db.String(100), nullable=True, default="")
     soundcloud = db.Column(db.String(100), nullable=True, default="")
     spotify = db.Column(db.String(100), nullable=True, default="")
@@ -95,6 +96,7 @@ class DjProfile(db.Model):
     biografia = db.Column(db.String(1000), nullable=True, default="")
     dur_min = db.Column(db.String(10), nullable=True, default="")
     dur_max = db.Column(db.String(10), nullable=True, default="")
+    viajes = db.Column(db.String(10), nullable=True, default="")
     staff = db.Column(db.Integer, nullable=True, default=0)
     arrienda_equipos = db.Column(db.String(10), nullable=True, default="No")
     requisitos = db.Column(db.String(1000), nullable=True, default="[]")
@@ -124,12 +126,13 @@ class DjProfile(db.Model):
             "dur_max": self.dur_max,
             "staff": self.staff,
             "arrienda_equipos": self.arrienda_equipos,
-            "requisitos": self.requisitos,
+            "requisitos": json.loads(self.requisitos),
             "datos": json.loads(self.datos),
             "suma_rating": self.suma_rating,
             "contrataciones": self.contrataciones,
             "feedback": json.loads(self.feedback),
-            "djaccount": self.djaccount.serialize()   
+            "djaccount": self.djaccount.serialize(), 
+            "status": self.status 
         }
     
     def card(self):
@@ -144,7 +147,8 @@ class DjProfile(db.Model):
             "spotify": self.spotify,
             "generos": json.loads(self.generos),
             "servicios": json.loads(self.servicios),
-            "tecnica": json.loads(self.tecnica)
+            "tecnica": json.loads(self.tecnica),
+            "status": self.status
         }
 
     def save(self):
@@ -163,6 +167,7 @@ class ClientProfile(db.Model):
     __tablename__ = "clientprofile"
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.Integer, ForeignKey('account.id', ondelete="CASCADE"))
+    status = db.Column(db.String(50), nullable=True, default="inactive")
     nombre = db.Column(db.String(100))
     apellido = db.Column(db.String(100))
     rut = db.Column(db.String(100))
@@ -173,7 +178,7 @@ class ClientProfile(db.Model):
     suma_rating = db.Column(db.Integer, nullable=True, default=0)
     contrataciones = db.Column(db.Integer, nullable=True, default=0)
     feedback = db.Column(db.String(1000), nullable=True, default="[]")
-  
+ 
 
     def serialize(self):
         return {
@@ -189,7 +194,8 @@ class ClientProfile(db.Model):
             "suma_rating": self.suma_rating,
             "contrataciones": self.contrataciones,
             "feedback": json.loads(self.feedback),
-            "clientaccount": self.clientaccount.serialize()
+            "clientaccount": self.clientaccount.serialize(),
+            "status": self.status
         }
     
     def save(self):

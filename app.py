@@ -64,6 +64,30 @@ def register():
         account.password = generate_password_hash(password)
         account.role_id = role
         account.save()
+
+        if account.role_id == 2:
+            dj = DjProfile()
+            dj.dj_id = account.id
+            dj.artista = ""
+            dj.ciudad = ""
+            dj.status = "inactive"
+            dj.pais = ""
+            dj.generos = json.dumps([])
+            dj.servicios = json.dumps([])
+            dj.tecnica = json.dumps([])
+            dj.save()
+        if account.role_id == 3:
+            client = ClientProfile()
+            client.client_id = account.id
+            client.nombre = ""
+            client.apellido = ""
+            client.rut = ""
+            client.nacionalidad = ""
+            client.ciudad = ""
+            client.pais = ""
+            client.status = "inactive"
+            client.save()
+
         return jsonify(account.serialize()), 201
 
     if request.method == 'DELETE':
@@ -171,21 +195,22 @@ def logout():
     blacklist.add(jti)
     return jsonify({"msg": "Successfully logged out"}), 200
 
-## crear Perfl DJ 
-@app.route('/profile', methods=['POST'])
+## actualizar perfil de DJ o de Cliente
+@app.route('/profile', methods=['PUT'])
 @jwt_required
 def profile():
-    if request.method == 'POST':
+    if request.method == 'PUT':
         username = get_jwt_identity()
         account = Account.query.filter_by(username=username).first()
         if account.role_id == 2:
-            djprofile = DjProfile.query.filter_by(dj_id=account.role_id).first()
-            if djprofile:
-                return jsonify({"msg": "Dj ya tiene un perfil"})
+            djprofile = DjProfile.query.filter_by(dj_id=account.id).first()
+            if not djprofile:
+                return jsonify({"msg": "Cuenta de dj no tiene perfil asociado"})
             else:
                 artista = request.json.get("artista", None)
                 ciudad = request.json.get("ciudad", None)
                 pais = request.json.get("pais", None)
+                status = request.json.get("status", None)
                 mixcloud = request.json.get("mixcloud")
                 soundcloud = request.json.get("soundcloud")
                 spotify = request.json.get("spotify")
@@ -209,40 +234,63 @@ def profile():
                     return jsonify({"msg": "Se requiere que incluyas una ciudad de origen"}), 400
                 if not pais:
                     return jsonify({"msg": "Se requiere que incluyas un pais de origen"}), 400
-                if not servicios:
+                if not generos:
                     return jsonify({"msg": "Se requiere que incluyas como minimo un genero"}), 400
                 if not servicios:
                     return jsonify({"msg": "Se requiere que incluyas como minimo un servicio"}), 400
                 if not tecnica:
                     return jsonify({"msg": "Se requiere que especifiques una técnica"}), 400
+                if not status:
+                    return jsonify({"msg": "Se requiere que se active el status de perfil"}), 400
 
-                dj = DjProfile()
-                dj.dj_id = account.id
-                dj.artista = artista
-                dj.ciudad = ciudad
-                dj.pais = pais
-                dj.mixcloud = mixcloud
-                dj.soundcloud = soundcloud
-                dj.spotify = spotify
-                dj.generos = json.dumps(generos)
-                dj.servicios = json.dumps(servicios)
-                dj.tecnica = json.dumps(tecnica)
-                dj.agregar_cancion = agregar_cancion
-                dj.url_cancion = url_cancion
-                dj.biografia = biografia
-                dj.dur_min = dur_max
-                dj.dur_max = dur_max
-                dj.staff = staff
-                dj.arrienda_equipos = arrienda_equipos
-                dj.requisitos = requisitos
-                dj.datos = datos
-                dj.save()
-                return jsonify(dj.serialize()), 201
+
+                #campos obligatorios
+                if artista:
+                    djprofile.artista = artista
+                if ciudad:
+                    djprofile.ciudad = ciudad
+                if status:
+                    djprofile.status = status
+                if pais:
+                    djprofile.pais = pais
+                if generos:
+                    djprofile.generos = json.dumps(generos)
+                if servicios:
+                    djprofile.servicios = json.dumps(servicios)
+                if tecnica:
+                    djprofile.tecnica = json.dumps(tecnica)
+                #no obligatorios
+                if mixcloud:
+                    djprofile.mixcloud = mixcloud
+                if soundcloud:
+                    djprofile.soundcloud = soundcloud
+                if spotify:
+                    djprofile.spotify = spotify
+                if agregar_cancion:
+                    djprofile.agregar_cancion = agregar_cancion
+                if url_cancion:
+                    djprofile.url_cancion = url_cancion
+                if biografia:
+                    djprofile.biografia = biografia
+                if dur_min:
+                    djprofile.dur_min = dur_max
+                if dur_max:
+                    djprofile.dur_max = dur_max
+                if staff:
+                    djprofile.staff = staff
+                if arrienda_equipos:
+                    djprofile.arrienda_equipos = arrienda_equipos
+                if requisitos:
+                    djprofile.requisitos = json.dumps(requisitos)
+                if datos:
+                    djprofile.datos = json.dumps(datos)
+                djprofile.update()
+                return jsonify(djprofile.serialize()), 201
     
         if account.role_id == 3:
-            clientprofile = ClientProfile.query.filter_by(client_id=account.role_id).first()
-            if clientprofile:
-                return jsonify({"msg": "Cliente ya tiene un perfil"})
+            clientprofile = ClientProfile.query.filter_by(client_id=account.id).first()
+            if not clientprofile:
+                return jsonify({"msg": "Cuenta no tiene perfil de cliene asociado"})
             else:
                 nombre = request.json.get("nombre", None)
                 apellido = request.json.get("apellido", None)
@@ -251,6 +299,7 @@ def profile():
                 ciudad = request.json.get("ciudad", None)
                 pais = request.json.get("pais", None)
                 biografia = request.json.get("biografia")
+                status = request.json.get("status")
 
                 if not nombre:
                     return jsonify({"msg": "Se requiere un nombre"}), 400
@@ -264,24 +313,23 @@ def profile():
                     return jsonify({"msg": "Se requiere una ciudad"}), 400
                 if not pais:
                     return jsonify({"msg": "Se requiere un pais de residencia"}), 400
+                if not status:
+                    return jsonify({"msg": "Se requiere que se active el status del perfil"}), 400
 
-
-                client = ClientProfile()
-                client.client_id = account.id
-                client.nombre = nombre
-                client.apellido = apellido
-                client.rut = rut
-                client.nacionalidad = nacionalidad
-                client.ciudad = ciudad
-                client.pais = pais
-                client.biografia = biografia
-                client.save()
-                return jsonify(client.serialize()), 201
+                clientprofile.nombre = nombre
+                clientprofile.apellido = apellido
+                clientprofile.rut = rut
+                clientprofile.nacionalidad = nacionalidad
+                clientprofile.ciudad = ciudad
+                clientprofile.pais = pais
+                clientprofile.status = status
+                if biografia:
+                    clientprofile.biografia = biografia
+                clientprofile.update()
+                return jsonify(clientprofile.serialize()), 201
 
         else:
             return jsonify({"msg": "Usuario no es un DJ o Cliente"})
-
-
 
 ## Ruta para recibir un perfil completo de DJ (solo para usuario logeado)
 @app.route('/profile/<int:dj_id>', methods=['GET'])
@@ -295,10 +343,10 @@ def getprofile(dj_id):
         else:
             return jsonify({"msg": "Porfavor iniciar session o crear cuenta para ver este contenido"}), 400
 
-## Recibir todas las cartas de perfil
+## Recibir todas las cartas de perfil con status activo
 @app.route('/profiles', methods=['GET'])
 def profiles():
-    profiles = DjProfile.query.all()
+    profiles = DjProfile.query.filter_by(status="active").all()
     profiles = list(map(lambda profile: profile.card(), profiles))
     return jsonify(profiles), 200
 
