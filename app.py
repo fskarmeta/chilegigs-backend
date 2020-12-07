@@ -299,7 +299,7 @@ def profile():
         if account.role_id == 3:
             clientprofile = ClientProfile.query.filter_by(client_id=account.id).first()
             if not clientprofile:
-                return jsonify({"msg": "Cuenta no tiene perfil de cliene asociado"})
+                return jsonify({"msg": "Cuenta no tiene perfil de cliente asociado"})
             else:
                 nombre = request.json.get("nombre", None)
                 apellido = request.json.get("apellido", None)
