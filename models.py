@@ -84,6 +84,7 @@ class DjProfile(db.Model):
     artista = db.Column(db.String(100))
     ciudad = db.Column(db.String(100))
     pais = db.Column(db.String(100))
+    imagen = db.Column(db.String(300))
     status = db.Column(db.String(50), nullable=True, default="inactive")
     mixcloud = db.Column(db.String(100), nullable=True, default="")
     soundcloud = db.Column(db.String(100), nullable=True, default="")
@@ -113,6 +114,7 @@ class DjProfile(db.Model):
             "artista": self.artista,
             "ciudad": self.ciudad,
             "pais": self.pais,
+            "imagen": self.imagen,
             "mixcloud": self.mixcloud,
             "soundcloud": self.soundcloud,
             "spotify": self.spotify,
@@ -148,7 +150,8 @@ class DjProfile(db.Model):
             "generos": json.loads(self.generos),
             "servicios": json.loads(self.servicios),
             "tecnica": json.loads(self.tecnica),
-            "status": self.status
+            "status": self.status,
+            "imagen": self.imagen
         }
 
     def save(self):
@@ -170,6 +173,7 @@ class ClientProfile(db.Model):
     status = db.Column(db.String(50), nullable=True, default="inactive")
     nombre = db.Column(db.String(100))
     apellido = db.Column(db.String(100))
+    imagen = db.Column(db.String(300))
     rut = db.Column(db.String(100))
     nacionalidad = db.Column(db.String(100))
     ciudad = db.Column(db.String(100))
@@ -187,6 +191,7 @@ class ClientProfile(db.Model):
             "nombre": self.nombre,
             "apellido": self.apellido,
             "rut": self.rut,
+            "imagen": self.imagen,
             "nacionalidad": self.nacionalidad,
             "ciudad": self.ciudad,
             "pais": self.pais,

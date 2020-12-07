@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: c07aee7c1b96
+Revision ID: f7fcd99d3f9d
 Revises: 
-Create Date: 2020-12-06 17:12:19.453385
+Create Date: 2020-12-06 22:01:22.843709
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'c07aee7c1b96'
+revision = 'f7fcd99d3f9d'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -48,6 +48,7 @@ def upgrade():
     sa.Column('status', sa.String(length=50), nullable=True),
     sa.Column('nombre', sa.String(length=100), nullable=True),
     sa.Column('apellido', sa.String(length=100), nullable=True),
+    sa.Column('imagen', sa.String(length=300), nullable=True),
     sa.Column('rut', sa.String(length=100), nullable=True),
     sa.Column('nacionalidad', sa.String(length=100), nullable=True),
     sa.Column('ciudad', sa.String(length=100), nullable=True),
@@ -65,6 +66,7 @@ def upgrade():
     sa.Column('artista', sa.String(length=100), nullable=True),
     sa.Column('ciudad', sa.String(length=100), nullable=True),
     sa.Column('pais', sa.String(length=100), nullable=True),
+    sa.Column('imagen', sa.String(length=300), nullable=True),
     sa.Column('status', sa.String(length=50), nullable=True),
     sa.Column('mixcloud', sa.String(length=100), nullable=True),
     sa.Column('soundcloud', sa.String(length=100), nullable=True),

@@ -72,6 +72,7 @@ def register():
             dj.ciudad = ""
             dj.status = "inactive"
             dj.pais = ""
+            dj.imagen = ""
             dj.generos = json.dumps([])
             dj.servicios = json.dumps([])
             dj.tecnica = json.dumps([])
@@ -85,6 +86,7 @@ def register():
             client.nacionalidad = ""
             client.ciudad = ""
             client.pais = ""
+            client.imagen = ""
             client.status = "inactive"
             client.save()
 
@@ -202,6 +204,8 @@ def profile():
     if request.method == 'PUT':
         username = get_jwt_identity()
         account = Account.query.filter_by(username=username).first()
+        if not account:
+            return jsonify({"msg": "Cuenta no tiene permisos para actualizar un perfil"})
         if account.role_id == 2:
             djprofile = DjProfile.query.filter_by(dj_id=account.id).first()
             if not djprofile:
@@ -211,6 +215,7 @@ def profile():
                 ciudad = request.json.get("ciudad", None)
                 pais = request.json.get("pais", None)
                 status = request.json.get("status", None)
+                imagen = request.json.get("imagen", None)
                 mixcloud = request.json.get("mixcloud")
                 soundcloud = request.json.get("soundcloud")
                 spotify = request.json.get("spotify")
@@ -227,7 +232,9 @@ def profile():
                 requisitos = request.json.get("requisitos")
                 datos = request.json.get("datos")
                 
-
+                
+                if not imagen:
+                    return jsonify({"msg": "Se requiere una imagen del perfil"}), 400
                 if not artista:
                     return jsonify({"msg": "Se requiere nombre de artista"}), 400
                 if not ciudad:
@@ -245,6 +252,8 @@ def profile():
 
 
                 #campos obligatorios
+                if imagen:
+                    djprofile.imagen = imagen
                 if artista:
                     djprofile.artista = artista
                 if ciudad:
@@ -298,9 +307,12 @@ def profile():
                 nacionalidad = request.json.get("nacionalidad", None)
                 ciudad = request.json.get("ciudad", None)
                 pais = request.json.get("pais", None)
+                imagen = request.json.get("imagen", None)
                 biografia = request.json.get("biografia")
                 status = request.json.get("status")
 
+                if not imagen:
+                    return jsonify({"msg": "Se requiere una imagen de perfil"}), 400
                 if not nombre:
                     return jsonify({"msg": "Se requiere un nombre"}), 400
                 if not apellido:
@@ -323,6 +335,7 @@ def profile():
                 clientprofile.ciudad = ciudad
                 clientprofile.pais = pais
                 clientprofile.status = status
+                clientprofile.imagen = imagen
                 if biografia:
                     clientprofile.biografia = biografia
                 clientprofile.update()
