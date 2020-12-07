@@ -88,7 +88,7 @@ class DjProfile(db.Model):
     status = db.Column(db.String(50), nullable=True, default="inactive")
     mixcloud = db.Column(db.String(100), nullable=True, default="")
     soundcloud = db.Column(db.String(100), nullable=True, default="")
-    spotify = db.Column(db.String(100), nullable=True, default="")
+    instagram = db.Column(db.String(100), nullable=True, default="")
     generos = db.Column(db.String(500), default="[]")
     servicios = db.Column(db.String(500), default="[]")
     tecnica = db.Column(db.String(500), default="[]")
@@ -117,7 +117,7 @@ class DjProfile(db.Model):
             "imagen": self.imagen,
             "mixcloud": self.mixcloud,
             "soundcloud": self.soundcloud,
-            "spotify": self.spotify,
+            "instagram": self.instagram,
             "generos": json.loads(self.generos),
             "servicios": json.loads(self.servicios),
             "tecnica": json.loads(self.tecnica),
@@ -146,7 +146,7 @@ class DjProfile(db.Model):
             "pais": self.pais,
             "mixcloud": self.mixcloud,
             "soundcloud": self.soundcloud,
-            "spotify": self.spotify,
+            "instagram": self.instagram,
             "generos": json.loads(self.generos),
             "servicios": json.loads(self.servicios),
             "tecnica": json.loads(self.tecnica),
