@@ -10,20 +10,28 @@ db = SQLAlchemy()
 
 
 requisitosArray = {"equipos":[{"label":"Controladores","options":[{"value":"Ableton Push 3","label":"Ableton Push 3","group":"Controladores"},{"value":"Akai AMX - Mixing Surface","label":"Akai AMX - Mixing Surface","group":"Controladores"}]},{"label":"Mixer","options":[{"value":"10 entradas","label":"10 entradas","group":"Mixer"},{"value":"8 entradas","label":"8 entradas","group":"Mixer"}]}],"escenario":[{"label":"Mesas Ancho x Largo","options":[{"value":"Mesa 1x1 m^2","label":"Mesa 1x1 m^2","group":"Mesas Ancho x Largo"},{"value":"Mesa 1x2 m^2","label":"Mesa 1x2 m^2","group":"Mesas Ancho x Largo"},{"value":"Mesa 1x5 m^2","label":"Mesa 1x5 m^2","group":"Mesas Ancho x Largo"},{"value":"Mesa 1.5x1 m^2","label":"Mesa 1.5x1 m^2","group":"Mesas Ancho x Largo"},{"value":"Mesa 1.5x2 m^2","label":"Mesa 1.5x2 m^2","group":"Mesas Ancho x Largo"},{"value":"Mesa 1.5x3 m^2","label":"Mesa 1.5x3 m^2","group":"Mesas Ancho x Largo"}]},{"label":"Iluminación","options":[{"value":"Panel Led","label":"Panel Led","group":"Iluminación"},{"value":"Data Show","label":"Data Show","group":"Iluminación"}]}],"foodanddrinks":[{"label":"Bebestibles","options":[{"value":"Botella de Agua sin gas","label":"Botella de Agua sin gas","group":"Bebestible"},{"value":"Botella de Agua con gas","label":"Botella de Agua con gas","group":"Bebestibles"},{"value":"Coca Cola Light","label":"Coca Cola Light","group":"Bebestibles"},{"value":"Tequila","label":"Tequila","group":"Bebestibles"}]},{"label":"Snacks","options":[{"value":"Snacks Vegetarianos","label":"Snacks Vegetarianos","group":"Snacks"},{"value":"Snacks Veganos","label":"Snacks Veganos","group":"Snacks"}]}]}
-homeArray = {"header":{"image":"./img/home/header.jpg","cita":"hola buenos días"},"subheader":{"image":"./img/home/subheader.jpg","color":"black","title":"Chile gigs, el mejor lugar para Dj's","box1":{"title":"+8.000","text":"personas felices con nuestro producto"},"box2":{"title":"+300 eventos","text":"Promovemos a los mejores Dj's de Chile"}},"citas":[{"imagen":"./img/home/citas/dj1.jpg","nombre":"Dj Lucifer","cita":"Amo la musica tanto como esta página"},{"imagen":"./img/home/citas/dj2.jpg","nombre":"Dj Crap","cita":"Chilegigs es lo mejor que la ha pasado a nuestra industria"}]}
+homeArray = {"header":{"image":"https://res.cloudinary.com/chilegigs/image/upload/v1607467204/home/imagen10_lbjxpa.jpg","cita":"hola buenos días"},"subheader":{"image":"./img/home/subheader.jpg","color":"black","title":"Creemos en el poder de la música","box1":{"title":"+8.000","text":"Personas felices con nuestro DJ's"},"box2":{"title":"+300 eventos","text":"Promovemos a los mejores Dj's de Chile"}},"citas":[{"imagen":"https://res.cloudinary.com/chilegigs/image/upload/v1607467268/citas/profile1_zioyrs.jpg","nombre":"Dj Lucifer","cita":"Amo la musica tanto como esta página"},{"imagen":"https://res.cloudinary.com/chilegigs/image/upload/v1607467265/citas/profile2_n2q8wi.jpg","nombre":"Dj Crap","cita":"Chilegigs es lo mejor que la ha pasado a nuestra industria"},{"imagen":"https://res.cloudinary.com/chilegigs/image/upload/v1607467262/citas/profile3_fvvmrj.jpg","nombre":"Dj Tekila","cita":"El mejor sitio para dar a conocer mi talento"}]}
 
 class ObjetosGlobales(db.Model):
-    __tablename__ = "objetoglobales"
+    __tablename__ = "objetosglobales"
     id = db.Column(db.Integer, primary_key=True)
     requisitos = db.Column(db.Text())
     home = db.Column(db.Text())
+
+    def serialize(self):
+        return {
+            "requisitos": json.loads(self.requisitos),
+            "home": json.loads(self.home)
+        }
 
     def save(self):
         self.requisitos = json.dumps(requisitosArray) 
         self.home = json.dumps(homeArray)
         db.session.add(self)
         db.session.commit()    
-    
+
+    def update(self):
+        db.session.commit()
 
 class Roles(db.Model):
     __tablename__ = "roles"
@@ -63,6 +71,7 @@ class Account(db.Model):
             "username": self.username,
             "email": self.email,
             "time_created": self.time_created
+            # "perfil_dj": self.perfil_dj.serialize()
         }
 
     def save(self):
@@ -105,7 +114,7 @@ class DjProfile(db.Model):
     suma_rating = db.Column(db.Integer, nullable=True, default=0)
     contrataciones = db.Column(db.Integer, nullable=True, default=0)
     feedback = db.Column(db.String(1000), nullable=True, default="[]")
-    
+    # dj_profile = db.relationship('Account', backref="perfil_dj", lazy=True)
 
     def serialize(self):
         return {

@@ -32,6 +32,29 @@ def check_if_token_in_blacklist(decrypted_token):
 def main():
     return render_template('index.html')
 
+## recibir objeto globales
+@app.route('/objetos', methods=['GET'])
+def send():
+    objetosglobales = ObjetosGlobales.query.first()
+    return jsonify(objetosglobales.serialize()), 201
+
+##actualizar objeto Home
+@app.route('/objetos/home', methods=['PUT'])
+@jwt_required
+def getHome():
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    home = request.get_json()
+    if account:
+        if account.role_id == 1:
+            objetosglobales = ObjetosGlobales.query.first()
+            objetosglobales.home = json.dumps(home)
+            objetosglobales.update()
+            return jsonify({"msg": "objeto home actualizado"}), 201
+        else: 
+            return jsonify({"msg": "Usuario no tiene permiso para hacer estos cambios"}),400
+    else:
+        return json({"msg": "No existe tal cuenta de usuario"}), 400
 
 ## Crear y borrar Cuenta, en la tabla de roles en su workbench generar 3 tipos de cuenta
 ## Id queda vacío, nombre (una cliente, otra dj, otra admin), en status insertar un 1
@@ -53,6 +76,7 @@ def register():
         user = Account.query.filter_by(username=username).first()
         if user:
             return jsonify({"msg": "Nombre de usuario ya existe"}), 400
+
 
         user_email = Account.query.filter_by(email=email).first()
         if user_email:
@@ -76,6 +100,7 @@ def register():
             dj.generos = json.dumps([])
             dj.servicios = json.dumps([])
             dj.tecnica = json.dumps([])
+            dj.requisitos = json.dumps({"equipos":[],"escenario":[],"foodanddrinks":[]})
             dj.save()
         if account.role_id == 3:
             client = ClientProfile()
@@ -218,13 +243,13 @@ def profile():
                 imagen = request.json.get("imagen", None)
                 mixcloud = request.json.get("mixcloud")
                 soundcloud = request.json.get("soundcloud")
-                spotify = request.json.get("spotify")
+                instagram = request.json.get("instagram")
                 generos = request.json.get("generos", None)
                 servicios = request.json.get("servicios", None)
                 tecnica = request.json.get("tecnica", None)
                 agregar_cancion = request.json.get("agregar_cancion")
                 url_cancion = request.json.get("url_cancion")
-                biografia = request.json.get("artista")
+                biografia = request.json.get("biografia")
                 dur_min = request.json.get("dur_min")
                 dur_max = request.json.get("dur_max")
                 staff = request.json.get("staff")
@@ -273,8 +298,8 @@ def profile():
                     djprofile.mixcloud = mixcloud
                 if soundcloud:
                     djprofile.soundcloud = soundcloud
-                if spotify:
-                    djprofile.spotify = spotify
+                if instagram:
+                    djprofile.instagram = instagram
                 if agregar_cancion:
                     djprofile.agregar_cancion = agregar_cancion
                 if url_cancion:
@@ -345,9 +370,9 @@ def profile():
             return jsonify({"msg": "Usuario no es un DJ o Cliente"})
 
 ## Ruta para recibir un perfil completo de DJ (solo para usuario logeado)
-@app.route('/profile/<int:dj_id>', methods=['GET'])
+@app.route('/dj/profile/<int:dj_id>', methods=['GET'])
 @jwt_required
-def getprofile(dj_id):
+def getDjProfile(dj_id):
         username = get_jwt_identity()
         account = Account.query.filter_by(username=username).first()
         if account.role_id == 1 or account.role_id == 2 or account.role_id == 3:
@@ -356,7 +381,21 @@ def getprofile(dj_id):
         else:
             return jsonify({"msg": "Porfavor iniciar session o crear cuenta para ver este contenido"}), 400
 
-## Recibir todas las cartas de perfil con status activo
+## Ruta para recibir perfil completo de Cliente (solo para usuario logeado)
+@app.route('/client/profile/<int:client_id>', methods=['GET'])
+@jwt_required
+def getClientProfile(client_id):
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first()
+        if account.role_id == 1 or account.role_id == 2 or account.role_id == 3:
+            profile = ClientProfile.query.filter_by(client_id=client_id).first()
+            return jsonify(profile.serialize()), 201
+        else:
+            return jsonify({"msg": "Porfavor iniciar session o crear cuenta para ver este contenido"}), 400
+
+
+
+## Recibir todas las cartas de perfil dj con status activo
 @app.route('/profiles', methods=['GET'])
 def profiles():
     profiles = DjProfile.query.filter_by(status="active").all()
