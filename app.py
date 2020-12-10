@@ -258,22 +258,22 @@ def profile():
                 datos = request.json.get("datos")
                 
                 
-                if not imagen:
-                    return jsonify({"msg": "Se requiere una imagen del perfil"}), 400
-                if not artista:
-                    return jsonify({"msg": "Se requiere nombre de artista"}), 400
-                if not ciudad:
-                    return jsonify({"msg": "Se requiere que incluyas una ciudad de origen"}), 400
-                if not pais:
-                    return jsonify({"msg": "Se requiere que incluyas un pais de origen"}), 400
-                if not generos:
-                    return jsonify({"msg": "Se requiere que incluyas como minimo un genero"}), 400
-                if not servicios:
-                    return jsonify({"msg": "Se requiere que incluyas como minimo un servicio"}), 400
-                if not tecnica:
-                    return jsonify({"msg": "Se requiere que especifiques una técnica"}), 400
-                if not status:
-                    return jsonify({"msg": "Se requiere que se active el status de perfil"}), 400
+                # if not imagen:
+                #     return jsonify({"msg": "Se requiere una imagen del perfil"}), 400
+                # if not artista:
+                #     return jsonify({"msg": "Se requiere nombre de artista"}), 400
+                # if not ciudad:
+                #     return jsonify({"msg": "Se requiere que incluyas una ciudad de origen"}), 400
+                # if not pais:
+                #     return jsonify({"msg": "Se requiere que incluyas un pais de origen"}), 400
+                # if not generos:
+                #     return jsonify({"msg": "Se requiere que incluyas como minimo un genero"}), 400
+                # if not servicios:
+                #     return jsonify({"msg": "Se requiere que incluyas como minimo un servicio"}), 400
+                # if not tecnica:
+                #     return jsonify({"msg": "Se requiere que especifiques una técnica"}), 400
+                # if not status:
+                #     return jsonify({"msg": "Se requiere que se active el status de perfil"}), 400
 
 
                 #campos obligatorios
