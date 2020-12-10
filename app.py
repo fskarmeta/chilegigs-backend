@@ -56,6 +56,25 @@ def getHome():
     else:
         return json({"msg": "No existe tal cuenta de usuario"}), 400
 
+
+##actualizar objeto Requisitos
+@app.route('/objetos/requisitos', methods=['PUT'])
+@jwt_required
+def getReq():
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    requisitos = request.get_json()
+    if account:
+        if account.role_id == 1:
+            objetosglobales = ObjetosGlobales.query.first()
+            objetosglobales.requisitos = json.dumps(requisitos)
+            objetosglobales.update()
+            return jsonify({"msg": "objeto requisitos actualizado"}), 201
+        else: 
+            return jsonify({"msg": "Usuario no tiene permiso para hacer estos cambios"}),400
+    else:
+        return json({"msg": "No existe tal cuenta de usuario"}), 400
+
 ## Crear y borrar Cuenta, en la tabla de roles en su workbench generar 3 tipos de cuenta
 ## Id queda vacío, nombre (una cliente, otra dj, otra admin), en status insertar un 1
 @app.route('/user/register', methods=['POST', 'DELETE'])
