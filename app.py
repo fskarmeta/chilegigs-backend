@@ -7,6 +7,7 @@ from models import db, Roles, Account, DjProfile, ClientProfile, ObjetosGlobales
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, get_raw_jwt
+from flask_mail import Mail, Message
 from os import access, environ
 import config
 
@@ -16,6 +17,7 @@ app.url_map.strict_slashes = False
 app.config.from_object(config.Base)
 db.init_app(app)
 jwt = JWTManager(app)
+mail = Mail(app)
 blacklist = set()
 Migrate(app, db)
 CORS(app)
@@ -31,6 +33,33 @@ def check_if_token_in_blacklist(decrypted_token):
 @app.route('/')
 def main():
     return render_template('index.html')
+
+## Recuperar contraseña
+@app.route('/recover/password', methods=['PUT'])
+def send_password():
+    email = request.json.get("email", None)
+    if email:
+        account = Account.query.filter_by(email=email).first()
+        if account:
+            expires = datetime.timedelta(hours=3)
+            access_token = create_access_token(identity=account.username, expires_delta=expires)
+            msg = Message("Recuperar contraseña", recipients=[email])
+            msg.html = f"<h1>Hola {account.username}</h1><br><h3>Petición para cambiar contraseña aceptada</h3><br><h4>Pincha <a href='http://localhost:3000/recover/{access_token}'> aquí</a> para generar tu nueva contraseña</h4>"
+            mail.send(msg)
+            return jsonify({"exito": "Email enviado"}), 200
+            # data = {
+            #         "token_de_acceso": access_token,
+            #     }
+        else:
+            return jsonify({"msg": "Email no existe en nuestra base de datos"}), 401
+    else:
+        return jsonify({"msg": "Tienes que ingresar un email"}), 401
+
+
+
+
+
+    
 
 ## recibir objeto globales
 @app.route('/objetos', methods=['GET'])
