@@ -201,6 +201,32 @@ def updateEmail():
     else:
         return jsonify({"msg": "Tienes que volver a logearte"}), 401
 
+#Chequear token del store
+@app.route('/user/autologin', methods=['POST'])
+@jwt_required
+def autologin():
+        username = get_jwt_identity()
+        auth_header = request.headers.get('Authorization')
+        account = Account.query.filter_by(username=username).first()
+        if account:
+            client = ClientProfile.query.filter_by(client_id=account.id).first()
+            dj = DjProfile.query.filter_by(dj_id=account.id).first()
+            if client:
+                data = {
+                 "cuenta": account.serialize(),
+                 "perfil": client.serialize(),
+                 "access_token": auth_header 
+                }
+                return jsonify(data), 200
+            if dj:
+                data = {
+                 "cuenta": account.serialize(),
+                 "perfil": dj.serialize(),
+                 "access_token": auth_header
+                }
+                return jsonify(data), 200
+        else:
+            return jsonify({"msg": "Usuario no existe o token expiro."}), 401
 
 #login usuario
 @app.route('/user/login', methods=['POST'])
