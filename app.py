@@ -225,6 +225,8 @@ def autologin():
                  "access_token": auth_header
                 }
                 return jsonify(data), 200
+            else:
+                return jsonify({"msg": "Admin tiene que ingresar manualmente"}), 400
         else:
             return jsonify({"msg": "Usuario no existe o token expiro."}), 401
 
