@@ -135,6 +135,7 @@ class DjProfile(db.Model):
             "biografia": self.biografia,
             "dur_min": self.dur_min,
             "dur_max": self.dur_max,
+            "viajes": self.viajes,
             "staff": self.staff,
             "arrienda_equipos": self.arrienda_equipos,
             "requisitos": json.loads(self.requisitos),

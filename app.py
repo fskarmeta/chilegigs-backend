@@ -326,6 +326,7 @@ def profile():
                 agregar_cancion = request.json.get("agregar_cancion")
                 url_cancion = request.json.get("url_cancion")
                 biografia = request.json.get("biografia")
+                viajes = request.json.get("viajes")
                 dur_min = request.json.get("dur_min")
                 dur_max = request.json.get("dur_max")
                 staff = request.json.get("staff")
@@ -380,6 +381,8 @@ def profile():
                     djprofile.agregar_cancion = agregar_cancion
                 if url_cancion:
                     djprofile.url_cancion = url_cancion
+                if viajes:
+                    djprofile.viajes = viajes
                 if biografia:
                     djprofile.biografia = biografia
                 if dur_min:
