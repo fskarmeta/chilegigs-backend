@@ -147,7 +147,7 @@ def register():
             dj.imagen = ""
             dj.generos = json.dumps([])
             dj.servicios = json.dumps([])
-            dj.tecnica = json.dumps([])
+            dj.tecnica = ""
             dj.requisitos = json.dumps({"equipos":[],"escenario":[],"foodanddrinks":[]})
             dj.save()
         if account.role_id == 3:
@@ -368,7 +368,7 @@ def profile():
                 if servicios:
                     djprofile.servicios = json.dumps(servicios)
                 if tecnica:
-                    djprofile.tecnica = json.dumps(tecnica)
+                    djprofile.tecnica = tecnica
                 #no obligatorios
                 if mixcloud:
                     djprofile.mixcloud = mixcloud
@@ -445,7 +445,7 @@ def profile():
         else:
             return jsonify({"msg": "Usuario no es un DJ o Cliente"})
 
-## Ruta para recibir un perfil completo de DJ (solo para usuario logeado)
+## Ruta para recibir un perfil completo de DJ con ID (solo para usuario logeado) (tmb sirve para cliente really)
 @app.route('/dj/profile/<int:dj_id>', methods=['GET'])
 @jwt_required
 def getDjProfile(dj_id):
@@ -456,6 +456,21 @@ def getDjProfile(dj_id):
             return jsonify(profile.serialize()), 201
         else:
             return jsonify({"msg": "Porfavor iniciar session o crear cuenta para ver este contenido"}), 400
+
+
+## Ruta para recibir perfil completo de Dj con username (solo para usuario logead) (tmb sirve para cliente really)
+@app.route('/dj/profile/username/<usuario>', methods=['GET'])
+@jwt_required
+def getDjProfileWithUsername(usuario):
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first()
+        if account.role_id == 1 or account.role_id == 2 or account.role_id == 3:
+            djaccount = Account.query.filter_by(username=usuario).first()
+            profile = DjProfile.query.filter_by(dj_id=djaccount.id).first()
+            return jsonify(profile.serialize()), 201
+        else:
+            return jsonify({"msg": "Porfavor iniciar session o crear cuenta para ver este contenido"}), 400
+
 
 ## Ruta para recibir perfil completo de Cliente (solo para usuario logeado)
 @app.route('/client/profile/<int:client_id>', methods=['GET'])

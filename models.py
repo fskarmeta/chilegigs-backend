@@ -100,7 +100,7 @@ class DjProfile(db.Model):
     instagram = db.Column(db.String(100), nullable=True, default="")
     generos = db.Column(db.String(500), default="[]")
     servicios = db.Column(db.String(500), default="[]")
-    tecnica = db.Column(db.String(500), default="[]")
+    tecnica = db.Column(db.String(500), default="")
     agregar_cancion = db.Column(db.Boolean, server_default=expression.false())
     url_cancion = db.Column(db.String(100), nullable=True, default="")
     biografia = db.Column(db.String(1000), nullable=True, default="")
@@ -129,7 +129,7 @@ class DjProfile(db.Model):
             "instagram": self.instagram,
             "generos": json.loads(self.generos),
             "servicios": json.loads(self.servicios),
-            "tecnica": json.loads(self.tecnica),
+            "tecnica": self.tecnica,
             "agregar_cancion": self.agregar_cancion,
             "url_cancion": self.url_cancion,
             "biografia": self.biografia,
