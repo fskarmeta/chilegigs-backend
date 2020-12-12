@@ -334,7 +334,7 @@ def profile():
                 requisitos = request.json.get("requisitos")
                 datos = request.json.get("datos")
                 
-                
+                print(agregar_cancion)
                 # if not imagen:
                 #     return jsonify({"msg": "Se requiere una imagen del perfil"}), 400
                 # if not artista:
@@ -377,7 +377,7 @@ def profile():
                     djprofile.soundcloud = soundcloud
                 if instagram:
                     djprofile.instagram = instagram
-                if agregar_cancion:
+                if agregar_cancion or not agregar_cancion:
                     djprofile.agregar_cancion = agregar_cancion
                 if url_cancion:
                     djprofile.url_cancion = url_cancion
