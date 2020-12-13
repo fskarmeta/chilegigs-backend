@@ -475,10 +475,10 @@ def getDjProfileWithUsername(usuario):
             return jsonify({"msg": "Porfavor iniciar session o crear cuenta para ver este contenido"}), 400
 
 
-## Ruta para recibir perfil completo de Cliente (solo para usuario logeado)
+## Ruta para recibir perfil completo de Cliente con ID (solo para usuario logeado)
 @app.route('/client/profile/<int:client_id>', methods=['GET'])
 @jwt_required
-def getClientProfile(client_id):
+def getClientProfileWithUsername(client_id):
         username = get_jwt_identity()
         account = Account.query.filter_by(username=username).first()
         if account.role_id == 1 or account.role_id == 2 or account.role_id == 3:
@@ -487,7 +487,18 @@ def getClientProfile(client_id):
         else:
             return jsonify({"msg": "Porfavor iniciar session o crear cuenta para ver este contenido"}), 400
 
-
+## Ruta para recibir perfil completo de Cliente con Username (solo para usuario logeado)
+@app.route('/client/profile/username/<usuario>', methods=['GET'])
+@jwt_required
+def getClientProfile(usuario):
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first()
+        if account.role_id == 1 or account.role_id == 2 or account.role_id == 3:
+            clientaccount = Account.query.filter_by(username=usuario).first()
+            profile = ClientProfile.query.filter_by(client_id=clientaccount.id).first()
+            return jsonify(profile.serialize()), 201
+        else:
+            return jsonify({"msg": "Porfavor iniciar session o crear cuenta para ver este contenido"}), 400
 
 ## Recibir todas las cartas de perfil dj con status activo
 @app.route('/profiles', methods=['GET'])
