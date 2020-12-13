@@ -507,6 +507,8 @@ def profiles():
     profiles = list(map(lambda profile: profile.card(), profiles))
     return jsonify(profiles), 200
 
+
+## ACA EN ADELANTE VIENEN LOS GIGGGSSSS
 @manager.command
 def load_globales():
     role = Roles()
