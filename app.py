@@ -3,10 +3,11 @@ import json
 from flask import Flask, render_template, request, jsonify
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
-from models import db, Roles, Account, DjProfile
+from models import db, Roles, Account, DjProfile, ClientProfile, ObjetosGlobales
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, get_raw_jwt
+from flask_mail import Mail, Message
 from os import access, environ
 import config
 
@@ -16,16 +17,92 @@ app.url_map.strict_slashes = False
 app.config.from_object(config.Base)
 db.init_app(app)
 jwt = JWTManager(app)
+mail = Mail(app)
+blacklist = set()
 Migrate(app, db)
 CORS(app)
 manager = Manager(app)
 manager.add_command("db", MigrateCommand)
+
+@jwt.token_in_blacklist_loader
+def check_if_token_in_blacklist(decrypted_token):
+    jti = decrypted_token['jti']
+    return jti in blacklist
 
 
 @app.route('/')
 def main():
     return render_template('index.html')
 
+## Recuperar contraseña
+@app.route('/recover/password', methods=['PUT'])
+def send_password():
+    email = request.json.get("email", None)
+    if email:
+        account = Account.query.filter_by(email=email).first()
+        if account:
+            expires = datetime.timedelta(hours=3)
+            access_token = create_access_token(identity=account.username, expires_delta=expires)
+            msg = Message("Recuperar contraseña", recipients=[email])
+            msg.html = f"<h1>Hola {account.username}</h1><br><h3>Petición para cambiar contraseña aceptada</h3><br><h4>Pincha <a href='http://localhost:3000/recover/{access_token}'> aquí</a> para generar tu nueva contraseña</h4>"
+            mail.send(msg)
+            return jsonify({"exito": "Email enviado"}), 200
+            # data = {
+            #         "token_de_acceso": access_token,
+            #     }
+        else:
+            return jsonify({"msg": "Email no existe en nuestra base de datos"}), 401
+    else:
+        return jsonify({"msg": "Tienes que ingresar un email"}), 401
+
+
+
+
+
+    
+
+## recibir objeto globales
+@app.route('/objetos', methods=['GET'])
+def send():
+    objetosglobales = ObjetosGlobales.query.first()
+    return jsonify(objetosglobales.serialize()), 201
+
+##actualizar objeto Home
+@app.route('/objetos/home', methods=['PUT'])
+@jwt_required
+def getHome():
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    home = request.get_json()
+    if account:
+        if account.role_id == 1:
+            objetosglobales = ObjetosGlobales.query.first()
+            objetosglobales.home = json.dumps(home)
+            objetosglobales.update()
+            return jsonify({"msg": "objeto home actualizado"}), 201
+        else: 
+            return jsonify({"msg": "Usuario no tiene permiso para hacer estos cambios"}),400
+    else:
+        return json({"msg": "No existe tal cuenta de usuario"}), 400
+
+
+##actualizar objeto Requisitos
+@app.route('/objetos/requisitos', methods=['PUT'])
+@jwt_required
+def getReq():
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    requisitos = request.get_json()
+    if account:
+        if account.role_id == 1:
+            objetosglobales = ObjetosGlobales.query.first()
+            objetosglobales.requisitos = json.dumps(requisitos)
+            objetosglobales.update()
+            return jsonify({"msg": "objeto requisitos actualizado"}), 201
+        else: 
+            return jsonify({"msg": "Usuario no tiene permiso para hacer estos cambios"}),400
+    else:
+        return json({"msg": "No existe tal cuenta de usuario"}), 400
 
 ## Crear y borrar Cuenta, en la tabla de roles en su workbench generar 3 tipos de cuenta
 ## Id queda vacío, nombre (una cliente, otra dj, otra admin), en status insertar un 1
@@ -48,6 +125,7 @@ def register():
         if user:
             return jsonify({"msg": "Nombre de usuario ya existe"}), 400
 
+
         user_email = Account.query.filter_by(email=email).first()
         if user_email:
             return jsonify({"msg": "Correo electronico ya existe"}), 400
@@ -58,6 +136,33 @@ def register():
         account.password = generate_password_hash(password)
         account.role_id = role
         account.save()
+
+        if account.role_id == 2:
+            dj = DjProfile()
+            dj.dj_id = account.id
+            dj.artista = ""
+            dj.ciudad = ""
+            dj.status = "inactive"
+            dj.pais = ""
+            dj.imagen = ""
+            dj.generos = json.dumps([])
+            dj.servicios = json.dumps([])
+            dj.tecnica = ""
+            dj.requisitos = json.dumps({"equipos":[],"escenario":[],"foodanddrinks":[]})
+            dj.save()
+        if account.role_id == 3:
+            client = ClientProfile()
+            client.client_id = account.id
+            client.nombre = ""
+            client.apellido = ""
+            client.rut = ""
+            client.nacionalidad = ""
+            client.ciudad = ""
+            client.pais = ""
+            client.imagen = ""
+            client.status = "inactive"
+            client.save()
+
         return jsonify(account.serialize()), 201
 
     if request.method == 'DELETE':
@@ -78,6 +183,81 @@ def register():
                 return jsonify({"msg": "Clave no coincide con usuario"})
         else:
            return jsonify({"msg": "No existe tal cuenta"}) 
+
+## Actualizar nombre de cuenta de usuario (esto no va)
+@app.route('/user/update/username', methods=['PUT'])
+@jwt_required
+def updateUsername():
+    newusername = request.json.get("username")
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    if account:
+        account.username = newusername
+        account.update()
+        return jsonify(account.serialize())
+    else:
+        return jsonify({"msg": "Tienes que volver a logearte"}), 401
+
+## Actualizar contraseña de usuario
+@app.route('/user/update/password', methods=['PUT'])
+@jwt_required
+def updatePassword():
+    newpassword = request.json.get("password")
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    if account:
+        account.password = generate_password_hash(newpassword)
+        account.update()
+        return jsonify(account.serialize())
+    else:
+        return jsonify({"msg": "Tienes que volver a logearte"}), 401
+
+## Actualizar Email de cuenta de usuario (validar que no exista ya)
+@app.route('/user/update/email', methods=['PUT'])
+@jwt_required
+def updateEmail():
+    newemail = request.json.get("email")
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    email = Account.query.filter_by(email=newemail).first()
+    if account:
+        if email:
+            return jsonify({"msg": "Email ya esta en uso"})
+        else:
+            account.email = newemail
+            account.update()
+            return jsonify(account.serialize())
+    else:
+        return jsonify({"msg": "Tienes que volver a logearte"}), 401
+
+#Chequear token del store
+@app.route('/user/autologin', methods=['POST'])
+@jwt_required
+def autologin():
+        username = get_jwt_identity()
+        auth_header = request.headers.get('Authorization')
+        account = Account.query.filter_by(username=username).first()
+        if account:
+            client = ClientProfile.query.filter_by(client_id=account.id).first()
+            dj = DjProfile.query.filter_by(dj_id=account.id).first()
+            if client:
+                data = {
+                 "cuenta": account.serialize(),
+                 "perfil": client.serialize(),
+                 "access_token": auth_header 
+                }
+                return jsonify(data), 200
+            if dj:
+                data = {
+                 "cuenta": account.serialize(),
+                 "perfil": dj.serialize(),
+                 "access_token": auth_header
+                }
+                return jsonify(data), 200
+            else:
+                return jsonify({"msg": "Admin tiene que ingresar manualmente"}), 400
+        else:
+            return jsonify({"msg": "Usuario no existe o token expiro."}), 401
 
 #login usuario
 @app.route('/user/login', methods=['POST'])
@@ -108,70 +288,244 @@ def login():
 
         return jsonify(data), 200
 
-## crear Perfl DJ (falta backref a account? borrar account = borrar perfil)
-@app.route('/profile/dj', methods=['POST', 'DELETE'])
+
+## Logout
+@app.route('/user/logout', methods=['DELETE'])
+@jwt_required
+def logout():
+    jti = get_raw_jwt()['jti']
+    print(jti)
+    blacklist.add(jti)
+    return jsonify({"msg": "Successfully logged out"}), 200
+
+## actualizar perfil de DJ o de Cliente
+@app.route('/profile', methods=['PUT'])
 @jwt_required
 def profile():
-    if request.method == 'POST':
+    if request.method == 'PUT':
         username = get_jwt_identity()
         account = Account.query.filter_by(username=username).first()
-        djprofile = DjProfile.query.filter_by(dj_id=account.role_id).first()
-        if djprofile:
-            return jsonify({"msg": "Usuario ya tiene un perfil"})
-        if account.role_id != 2:
-            return jsonify({"msg": "usuario no es un DJ"})
+        if not account:
+            return jsonify({"msg": "Cuenta no tiene permisos para actualizar un perfil"})
+        if account.role_id == 2:
+            djprofile = DjProfile.query.filter_by(dj_id=account.id).first()
+            if not djprofile:
+                return jsonify({"msg": "Cuenta de dj no tiene perfil asociado"})
+            else:
+                artista = request.json.get("artista", None)
+                ciudad = request.json.get("ciudad", None)
+                pais = request.json.get("pais", None)
+                status = request.json.get("status", None)
+                imagen = request.json.get("imagen", None)
+                mixcloud = request.json.get("mixcloud")
+                soundcloud = request.json.get("soundcloud")
+                instagram = request.json.get("instagram")
+                generos = request.json.get("generos", None)
+                servicios = request.json.get("servicios", None)
+                tecnica = request.json.get("tecnica", None)
+                agregar_cancion = request.json.get("agregar_cancion")
+                url_cancion = request.json.get("url_cancion")
+                biografia = request.json.get("biografia")
+                viajes = request.json.get("viajes")
+                dur_min = request.json.get("dur_min")
+                dur_max = request.json.get("dur_max")
+                staff = request.json.get("staff")
+                arrienda_equipos = request.json.get("arrienda_equipos")
+                requisitos = request.json.get("requisitos")
+                datos = request.json.get("datos")
+                
+                print(agregar_cancion)
+                # if not imagen:
+                #     return jsonify({"msg": "Se requiere una imagen del perfil"}), 400
+                # if not artista:
+                #     return jsonify({"msg": "Se requiere nombre de artista"}), 400
+                # if not ciudad:
+                #     return jsonify({"msg": "Se requiere que incluyas una ciudad de origen"}), 400
+                # if not pais:
+                #     return jsonify({"msg": "Se requiere que incluyas un pais de origen"}), 400
+                # if not generos:
+                #     return jsonify({"msg": "Se requiere que incluyas como minimo un genero"}), 400
+                # if not servicios:
+                #     return jsonify({"msg": "Se requiere que incluyas como minimo un servicio"}), 400
+                # if not tecnica:
+                #     return jsonify({"msg": "Se requiere que especifiques una técnica"}), 400
+                # if not status:
+                #     return jsonify({"msg": "Se requiere que se active el status de perfil"}), 400
+
+
+                #campos obligatorios
+                if imagen:
+                    djprofile.imagen = imagen
+                if artista:
+                    djprofile.artista = artista
+                if ciudad:
+                    djprofile.ciudad = ciudad
+                if status:
+                    djprofile.status = status
+                if pais:
+                    djprofile.pais = pais
+                if generos:
+                    djprofile.generos = json.dumps(generos)
+                if servicios:
+                    djprofile.servicios = json.dumps(servicios)
+                if tecnica:
+                    djprofile.tecnica = tecnica
+                #no obligatorios
+                if mixcloud:
+                    djprofile.mixcloud = mixcloud
+                if soundcloud:
+                    djprofile.soundcloud = soundcloud
+                if instagram:
+                    djprofile.instagram = instagram
+                if agregar_cancion or not agregar_cancion:
+                    djprofile.agregar_cancion = agregar_cancion
+                if url_cancion:
+                    djprofile.url_cancion = url_cancion
+                if viajes:
+                    djprofile.viajes = viajes
+                if biografia:
+                    djprofile.biografia = biografia
+                if dur_min:
+                    djprofile.dur_min = dur_max
+                if dur_max:
+                    djprofile.dur_max = dur_max
+                if staff:
+                    djprofile.staff = staff
+                if arrienda_equipos:
+                    djprofile.arrienda_equipos = arrienda_equipos
+                if requisitos:
+                    djprofile.requisitos = json.dumps(requisitos)
+                if datos:
+                    djprofile.datos = json.dumps(datos)
+                djprofile.update()
+                return jsonify(djprofile.serialize()), 201
+    
+        if account.role_id == 3:
+            clientprofile = ClientProfile.query.filter_by(client_id=account.id).first()
+            if not clientprofile:
+                return jsonify({"msg": "Cuenta no tiene perfil de cliente asociado"})
+            else:
+                nombre = request.json.get("nombre", None)
+                apellido = request.json.get("apellido", None)
+                rut = request.json.get("rut", None)
+                nacionalidad = request.json.get("nacionalidad", None)
+                ciudad = request.json.get("ciudad", None)
+                pais = request.json.get("pais", None)
+                imagen = request.json.get("imagen", None)
+                biografia = request.json.get("biografia")
+                status = request.json.get("status")
+
+                if not imagen:
+                    return jsonify({"msg": "Se requiere una imagen de perfil"}), 400
+                if not nombre:
+                    return jsonify({"msg": "Se requiere un nombre"}), 400
+                if not apellido:
+                    return jsonify({"msg": "Se requiere un apellido"}), 400
+                if not nacionalidad:
+                    return jsonify({"msg": "Se requiere una nacionalidad"}), 400
+                if not rut:
+                    return jsonify({"msg": "Se requiere un rut"}), 400
+                if not ciudad:
+                    return jsonify({"msg": "Se requiere una ciudad"}), 400
+                if not pais:
+                    return jsonify({"msg": "Se requiere un pais de residencia"}), 400
+                if not status:
+                    return jsonify({"msg": "Se requiere que se active el status del perfil"}), 400
+
+                clientprofile.nombre = nombre
+                clientprofile.apellido = apellido
+                clientprofile.rut = rut
+                clientprofile.nacionalidad = nacionalidad
+                clientprofile.ciudad = ciudad
+                clientprofile.pais = pais
+                clientprofile.status = status
+                clientprofile.imagen = imagen
+                if biografia:
+                    clientprofile.biografia = biografia
+                clientprofile.update()
+                return jsonify(clientprofile.serialize()), 201
+
         else:
-            artista = request.json.get("artista", None)
-            ciudad = request.json.get("ciudad", None)
-            pais = request.json.get("pais", None)
-            mixcloud = request.json.get("mixcloud")
-            soundcloud = request.json.get("soundcloud")
-            spotify = request.json.get("spotify")
-            servicios = request.json.get("servicios", None)
-            tecnica = request.json.get("tecnica", None)
-            agregar_cancion = request.json.get("agregar_cancion")
-            url_cancion = request.json.get("url_cancion")
-            biografia = request.json.get("artista")
-            dur_min = request.json.get("dur_min")
-            dur_max = request.json.get("dur_max")
-            staff = request.json.get("staff")
-            arrienda_equipos = request.json.get("arrienda_equipos")
-            requisitos = request.json.get("requisitos")
-            datos = request.json.get("datos")
-            
+            return jsonify({"msg": "Usuario no es un DJ o Cliente"})
 
-            if not artista:
-                return jsonify({"msg": "Se requiere nombre de artista"}), 400
-            if not ciudad:
-                return jsonify({"msg": "Se requiere que incluyas una ciudad de origen"}), 400
-            if not pais:
-                return jsonify({"msg": "Se requiere que incluyas un pais de origen"}), 400
-            if not servicios:
-                return jsonify({"msg": "Se requiere que incluyas como minimo un servicio"}), 400
-            if not tecnica:
-                return jsonify({"msg": "Se requiere que especifiques una técnica"}), 400
+## Ruta para recibir un perfil completo de DJ con ID (solo para usuario logeado) (tmb sirve para cliente really)
+@app.route('/dj/profile/<int:dj_id>', methods=['GET'])
+@jwt_required
+def getDjProfile(dj_id):
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first()
+        if account.role_id == 1 or account.role_id == 2 or account.role_id == 3:
+            profile = DjProfile.query.filter_by(dj_id=dj_id).first()
+            return jsonify(profile.serialize()), 201
+        else:
+            return jsonify({"msg": "Porfavor iniciar session o crear cuenta para ver este contenido"}), 400
 
-            dj = DjProfile()
-            dj.dj_id = account.id
-            dj.artista = artista
-            dj.ciudad = ciudad
-            dj.pais = pais
-            dj.mixcloud = mixcloud
-            dj.soundcloud = soundcloud
-            dj.spotify = spotify
-            dj.servicios = json.dumps(servicios)
-            dj.tecnica = json.dumps(tecnica)
-            dj.agregar_cancion = agregar_cancion
-            dj.url_cancion = url_cancion
-            dj.biografia = biografia
-            dj.dur_min = dur_max
-            dj.dur_max = dur_max
-            dj.staff = staff
-            dj.arrienda_equipos = arrienda_equipos
-            dj.requisitos = requisitos
-            dj.datos = datos
-            dj.save()
-            return jsonify(dj.serialize()), 201
 
+## Ruta para recibir perfil completo de Dj con username (solo para usuario logead) (tmb sirve para cliente really)
+@app.route('/dj/profile/username/<usuario>', methods=['GET'])
+@jwt_required
+def getDjProfileWithUsername(usuario):
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first()
+        if account.role_id == 1 or account.role_id == 2 or account.role_id == 3:
+            djaccount = Account.query.filter_by(username=usuario).first()
+            profile = DjProfile.query.filter_by(dj_id=djaccount.id).first()
+            return jsonify(profile.serialize()), 201
+        else:
+            return jsonify({"msg": "Porfavor iniciar session o crear cuenta para ver este contenido"}), 400
+
+
+## Ruta para recibir perfil completo de Cliente con ID (solo para usuario logeado)
+@app.route('/client/profile/<int:client_id>', methods=['GET'])
+@jwt_required
+def getClientProfileWithUsername(client_id):
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first()
+        if account.role_id == 1 or account.role_id == 2 or account.role_id == 3:
+            profile = ClientProfile.query.filter_by(client_id=client_id).first()
+            return jsonify(profile.serialize()), 201
+        else:
+            return jsonify({"msg": "Porfavor iniciar session o crear cuenta para ver este contenido"}), 400
+
+## Ruta para recibir perfil completo de Cliente con Username (solo para usuario logeado)
+@app.route('/client/profile/username/<usuario>', methods=['GET'])
+@jwt_required
+def getClientProfile(usuario):
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first()
+        if account.role_id == 1 or account.role_id == 2 or account.role_id == 3:
+            clientaccount = Account.query.filter_by(username=usuario).first()
+            profile = ClientProfile.query.filter_by(client_id=clientaccount.id).first()
+            return jsonify(profile.serialize()), 201
+        else:
+            return jsonify({"msg": "Porfavor iniciar session o crear cuenta para ver este contenido"}), 400
+
+## Recibir todas las cartas de perfil dj con status activo
+@app.route('/profiles', methods=['GET'])
+def profiles():
+    profiles = DjProfile.query.filter_by(status="active").all()
+    profiles = list(map(lambda profile: profile.card(), profiles))
+    return jsonify(profiles), 200
+
+
+## ACA EN ADELANTE VIENEN LOS GIGGGSSSS
+@manager.command
+def load_globales():
+    role = Roles()
+    role.name = "admin"
+    role.status = True
+    role.save()
+    role = Roles()
+    role.name = "dj"
+    role.status = True
+    role.save()
+    role = Roles()
+    role.name = "client"
+    role.status = True
+    role.save()
+    og = ObjetosGlobales()
+    og.save()
+    print("Objetos globales cargados")
+    
 if __name__ == '__main__':
     manager.run()

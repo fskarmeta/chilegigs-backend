@@ -19,6 +19,12 @@ pipenv run upgrade
 
 en workbench en la tabla de roles, crear una fila respectiva para admin,dj,cliente, status dejar inicialiado en "1" -> apply
 
+(1 para admin, 2 para dj, 3 para cliente!)
+
 nuevamente ejecutar un migrate y upgrade. Con esto ya puedes crear cuenta en el insomia y logearte.
 
 Con el token, crear perfil.
+
+##
+
+PD: No Tutorial, No Templates :)
