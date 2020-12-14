@@ -252,6 +252,8 @@ class Gig(db.Model):
     leido_por_dj = db.Column(db.Boolean, server_default=expression.false())
     leido_por_cliente = db.Column(db.Boolean, server_default=expression.false())
     mensaje = db.Column(db.String(10000))
+    time_created = db.Column(db.DateTime, nullable=False,
+    default=datetime.utcnow)
 
     def serialize(self):
         return {
@@ -274,7 +276,8 @@ class Gig(db.Model):
             "privado": self.privado,
             "leido_por_dj": self.leido_por_dj,
             "leido_por_cliente": self.leido_por_cliente,
-            "mensaje": json.loads(self.mensaje)
+            "mensaje": json.loads(self.mensaje),
+            "time_created": self.time_created
         }
 
     def save(self):

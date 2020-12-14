@@ -583,6 +583,51 @@ def gigRegister():
         else:
             return jsonify({"msg": "Solamente clientes pueden hacer booking"}), 401
 
+## Recibir un gig completo 
+@app.route('/gig/<int:id>', methods=['GET'])
+@jwt_required
+def getGig(id):
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first()
+        if account:
+            gig = Gig.query.filter_by(id=id).first()
+            if gig.client_id == account.id or gig.dj_id == account.id or account.role_id == 1:
+                return jsonify(gig.serialize()), 201
+            else:
+                return jsonify({"msg": "No tienes permiso para acceder a la información de este gig"}), 201
+        else:
+            return jsonify({"msg": "No existe tu cuenta en nuestro registro"}), 401
+
+## Recibir todos los gigs asociados al ID de una cuenta
+@app.route('/account/gig', methods=['GET'])
+@jwt_required
+def getGigByAccount():
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first()
+        if account:
+            if account.role_id == 2:
+                gigs = Gig.query.filter_by(dj_id=account.id).all()
+                gigs = list(map(lambda gig: gig.serialize(), gigs))
+                return jsonify(gigs), 201
+            if account.role_id == 3:
+                gigs = Gig.query.filter_by(client_id=account.id).all()
+                gigs = list(map(lambda gig: gig.serialize(), gigs))
+                return jsonify(gigs), 200
+        else:
+            return jsonify({"msg": "Cuenta no existe en nuestros registros"}), 401
+
+## Recibir todos los gigs existentes (solo para admin)
+@app.route('/admin/gigs', methods=['GET'])
+@jwt_required
+def getAllGigs():
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first() 
+        if account.role_id == 1:
+            gigs = Gig.query.all()
+            gigs = list(map(lambda gig: gig.serialize(), gigs))
+            return jsonify(gigs), 201
+        else:
+            return jsonify({"msg": "Cuenta no tiene derechos sobre esta información"}), 401    
 
 @manager.command
 def load_globales():
