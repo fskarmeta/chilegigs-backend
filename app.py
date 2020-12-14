@@ -3,7 +3,7 @@ import json
 from flask import Flask, render_template, request, jsonify
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
-from models import db, Roles, Account, DjProfile, ClientProfile, ObjetosGlobales
+from models import db, Roles, Account, DjProfile, ClientProfile, ObjetosGlobales, Gig
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, get_raw_jwt
@@ -104,8 +104,7 @@ def getReq():
     else:
         return json({"msg": "No existe tal cuenta de usuario"}), 400
 
-## Crear y borrar Cuenta, en la tabla de roles en su workbench generar 3 tipos de cuenta
-## Id queda vacío, nombre (una cliente, otra dj, otra admin), en status insertar un 1
+##Crear cuenta e inicializar perfil
 @app.route('/user/register', methods=['POST', 'DELETE'])
 def register():
     if request.method == 'POST':
@@ -140,6 +139,7 @@ def register():
         if account.role_id == 2:
             dj = DjProfile()
             dj.dj_id = account.id
+            dj.username = account.username
             dj.artista = ""
             dj.ciudad = ""
             dj.status = "inactive"
@@ -334,7 +334,7 @@ def profile():
                 requisitos = request.json.get("requisitos")
                 datos = request.json.get("datos")
                 
-                print(agregar_cancion)
+                
                 # if not imagen:
                 #     return jsonify({"msg": "Se requiere una imagen del perfil"}), 400
                 # if not artista:
@@ -504,11 +504,69 @@ def getClientProfile(usuario):
 @app.route('/profiles', methods=['GET'])
 def profiles():
     profiles = DjProfile.query.filter_by(status="active").all()
-    profiles = list(map(lambda profile: profile.card(), profiles))
-    return jsonify(profiles), 200
+    if profiles:
+        profiles = list(map(lambda profile: profile.card(), profiles))
+        return jsonify(profiles), 200
+    else:
+        return jsonify({"msg": "No hay perfiles activos"}), 401
 
 
 ## ACA EN ADELANTE VIENEN LOS GIGGGSSSS
+
+
+##Registar Gig
+@app.route('/gig/register', methods=['POST'])
+@jwt_required
+def gigRegister():
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first()
+        if account.role_id == 3:
+            client_id = request.json.get("client_id", None)
+            dj_id = request.json.get("dj_id", None)
+            estado = request.json.get("estado", None)
+            username_cliente = request.json.get("username_cliente", None)
+            username_dj = request.json.get("username_dj", None)
+            dia_evento = request.json.get("dia_evento", None)
+            tipo_evento = request.json.get("tipo_evento", None)
+            nombre_evento = request.json.get("nombre_evento", None)
+            telefono = request.json.get("telefono", None)
+            direccion = request.json.get("direccion", None)
+            hora_llegada = request.json.get("hora_llegada", None)
+            hora_show = request.json.get("hora_show", None)
+            transporte = request.json.get("transporte", None)
+            oferta = request.json.get("oferta", None)
+            link_evento = request.json.get("link_evento")
+            privado = request.json.get("privado", None)
+            leido_por_dj = request.json.get("leido_por_dj", None)
+            leido_por_cliente = request.json.get("leido_por_cliente", None)
+            mensaje = request.json.get("mensaje", None)
+
+            gig = Gig()
+            gig.client_id = client_id
+            gig.dj_id = dj_id
+            gig.estado = estado
+            gig.username_cliente = username_cliente
+            gig.username_dj = username_dj
+            gig.dia_evento = dia_evento
+            gig.tipo_evento = tipo_evento
+            gig.nombre_evento = nombre_evento
+            gig.telefono = telefono
+            gig.direccion = direccion
+            gig.hora_llegada = hora_llegada
+            gig.hora_show = hora_show
+            gig.transporte = transporte
+            gig.oferta = oferta
+            gig.link_evento = link_evento
+            gig.privado = privado
+            gig.leido_por_dj = leido_por_dj
+            gig.leido_por_cliente = leido_por_cliente
+            gig.mensaje = json.dumps(mensaje)
+            gig.save()
+            return jsonify(gig.serialize())
+        else:
+            return jsonify({"msg": "Solamente clientes pueden hacer booking"}), 401
+
+
 @manager.command
 def load_globales():
     role = Roles()

@@ -92,6 +92,7 @@ class DjProfile(db.Model):
     dj_id = db.Column(db.Integer, ForeignKey('account.id', ondelete="CASCADE"))
     artista = db.Column(db.String(100))
     ciudad = db.Column(db.String(100))
+    username = db.Column(db.String(100))
     pais = db.Column(db.String(100))
     imagen = db.Column(db.String(300))
     status = db.Column(db.String(50), nullable=True, default="inactive")
@@ -144,7 +145,8 @@ class DjProfile(db.Model):
             "contrataciones": self.contrataciones,
             "feedback": json.loads(self.feedback),
             "djaccount": self.djaccount.serialize(), 
-            "status": self.status 
+            "status": self.status, 
+            "username": self.username
         }
     
     def card(self):
@@ -159,9 +161,10 @@ class DjProfile(db.Model):
             "instagram": self.instagram,
             "generos": json.loads(self.generos),
             "servicios": json.loads(self.servicios),
-            "tecnica": json.loads(self.tecnica),
+            "tecnica": self.tecnica,
             "status": self.status,
-            "imagen": self.imagen
+            "imagen": self.imagen,
+            "username": self.username,
         }
 
     def save(self):
@@ -224,3 +227,63 @@ class ClientProfile(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+
+## GIG
+
+class Gig(db.Model):
+    __tablename__ = "gig"
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, ForeignKey('account.id', ondelete="CASCADE"))
+    dj_id = db.Column(db.Integer, ForeignKey('account.id', ondelete="CASCADE"))
+    estado = db.Column(db.String(100))
+    username_cliente = db.Column(db.String(100))
+    username_dj = db.Column(db.String(100))
+    dia_evento = db.Column(db.String(100))
+    tipo_evento = db.Column(db.String(100))
+    nombre_evento = db.Column(db.String(100))
+    telefono = db.Column(db.String(100))
+    direccion = db.Column(db.String(100))
+    hora_llegada = db.Column(db.String(100))
+    hora_show = db.Column(db.String(100))
+    transporte = db.Column(db.String(100))
+    oferta = db.Column(db.String(100))
+    link_evento = db.Column(db.String(100), nullable=True, default="")
+    privado = db.Column(db.Boolean, server_default=expression.false())
+    leido_por_dj = db.Column(db.Boolean, server_default=expression.false())
+    leido_por_cliente = db.Column(db.Boolean, server_default=expression.false())
+    mensaje = db.Column(db.String(10000))
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "client_id": self.client_id,
+            "dj_id": self.dj_id,
+            "estado": self.estado,
+            "username_cliente": self.username_cliente,
+            "username_dj": self.username_dj,
+            "dia_evento": self.dia_evento,
+            "tipo_evento": self.tipo_evento,
+            "nombre_evento": self.nombre_evento,
+            "telefono": self.telefono,
+            "direccion": self.direccion,
+            "hora_llegada": self.hora_llegada,
+            "hora_show": self.hora_show,
+            "transporte": self.transporte,
+            "oferta": self.oferta,
+            "link_evento": self.link_evento,
+            "privado": self.privado,
+            "leido_por_dj": self.leido_por_dj,
+            "leido_por_cliente": self.leido_por_cliente,
+            "mensaje": json.loads(self.mensaje)
+        }
+
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def update(self):
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
