@@ -198,7 +198,7 @@ def updateUsername():
     else:
         return jsonify({"msg": "Tienes que volver a logearte"}), 401
 
-## Actualizar contraseña de usuario
+## Actualizar contraseña de usuario al recuperar constraseña
 @app.route('/user/update/password', methods=['PUT'])
 @jwt_required
 def updatePassword():
@@ -208,10 +208,27 @@ def updatePassword():
     if account:
         account.password = generate_password_hash(newpassword)
         account.update()
-        return jsonify(account.serialize())
+        return jsonify(account.serialize()), 201
     else:
         return jsonify({"msg": "Tienes que volver a logearte"}), 401
 
+## Actualizar contraseña de usuario desde cuenta
+@app.route('/account/update/password', methods=['PUT'])
+@jwt_required
+def updatePasswordFromAccount():
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    oldpassword = request.json.get("old_password")
+    newpassword = request.json.get("new_password")
+    if account:
+        if  check_password_hash(account.password, oldpassword):
+            account.password = generate_password_hash(newpassword)
+            account.update()
+            return jsonify({"success": "Contraseña ha sido actualizada exitosamente"}), 201
+        else:
+            return jsonify({"msg": "Clave antigua incorrecta"}), 401
+    else:
+        return jsonify({"msg": "No se pudo encontrar a este usuario"}), 401
 ## Actualizar Email de cuenta de usuario (validar que no exista ya)
 @app.route('/user/update/email', methods=['PUT'])
 @jwt_required
@@ -446,7 +463,7 @@ def profile():
                 return jsonify(clientprofile.serialize()), 201
 
         else:
-            return jsonify({"msg": "Usuario no es un DJ o Cliente"})
+            return jsonify({"msg": "Usuario no es un DJ o Cliente"}), 401
 
 ## Ruta para recibir un perfil completo de DJ con ID (solo para usuario logeado) (tmb sirve para cliente really)
 @app.route('/dj/profile/<int:dj_id>', methods=['GET'])

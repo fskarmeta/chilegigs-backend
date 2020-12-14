@@ -24,7 +24,3 @@ en workbench en la tabla de roles, crear una fila respectiva para admin,dj,clien
 nuevamente ejecutar un migrate y upgrade. Con esto ya puedes crear cuenta en el insomia y logearte.
 
 Con el token, crear perfil.
-
-##
-
-PD: No Tutorial, No Templates :)
