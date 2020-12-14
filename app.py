@@ -545,6 +545,7 @@ def gigRegister():
             username_dj = request.json.get("username_dj", None)
             dia_evento = request.json.get("dia_evento", None)
             tipo_evento = request.json.get("tipo_evento", None)
+            duracion = request.json.get("duracion", None)
             nombre_evento = request.json.get("nombre_evento", None)
             telefono = request.json.get("telefono", None)
             direccion = request.json.get("direccion", None)
@@ -564,6 +565,7 @@ def gigRegister():
             gig.estado = estado
             gig.username_cliente = username_cliente
             gig.username_dj = username_dj
+            gig.duracion = duracion
             gig.dia_evento = dia_evento
             gig.tipo_evento = tipo_evento
             gig.nombre_evento = nombre_evento

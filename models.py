@@ -243,6 +243,7 @@ class Gig(db.Model):
     nombre_evento = db.Column(db.String(100))
     telefono = db.Column(db.String(100))
     direccion = db.Column(db.String(100))
+    duracion = db.Column(db.String(100))
     hora_llegada = db.Column(db.String(100))
     hora_show = db.Column(db.String(100))
     transporte = db.Column(db.String(100))
@@ -274,6 +275,7 @@ class Gig(db.Model):
             "oferta": self.oferta,
             "link_evento": self.link_evento,
             "privado": self.privado,
+            "duracion": self.duracion,
             "leido_por_dj": self.leido_por_dj,
             "leido_por_cliente": self.leido_por_cliente,
             "mensaje": json.loads(self.mensaje),
