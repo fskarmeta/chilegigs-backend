@@ -282,6 +282,19 @@ class Gig(db.Model):
             "time_created": self.time_created
         }
 
+    def gigsReducido(self):
+        return {
+            "id": self.id,
+            "username_cliente": self.username_cliente,
+            "username_dj": self.username_dj,
+            "dia_evento": self.dia_evento,
+            "hora_llegada": self.hora_llegada,
+            "nombre_evento": self.nombre_evento,
+            "leido_por_cliente": self.leido_por_cliente,
+            "leido_por_dj": self.leido_por_dj,
+            "estado": self.estado
+        }
+
     def save(self):
         db.session.add(self)
         db.session.commit()

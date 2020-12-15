@@ -403,7 +403,7 @@ def profile():
                 if biografia:
                     djprofile.biografia = biografia
                 if dur_min:
-                    djprofile.dur_min = dur_max
+                    djprofile.dur_min = dur_min
                 if dur_max:
                     djprofile.dur_max = dur_max
                 if staff:
@@ -581,7 +581,7 @@ def gigRegister():
             gig.leido_por_cliente = leido_por_cliente
             gig.mensaje = json.dumps(mensaje)
             gig.save()
-            return jsonify(gig.serialize())
+            return jsonify(gig.serialize()), 201
         else:
             return jsonify({"msg": "Solamente clientes pueden hacer booking"}), 401
 
@@ -609,11 +609,11 @@ def getGigByAccount():
         if account:
             if account.role_id == 2:
                 gigs = Gig.query.filter_by(dj_id=account.id).all()
-                gigs = list(map(lambda gig: gig.serialize(), gigs))
+                gigs = list(map(lambda gig: gig.gigsReducido(), gigs))
                 return jsonify(gigs), 201
             if account.role_id == 3:
                 gigs = Gig.query.filter_by(client_id=account.id).all()
-                gigs = list(map(lambda gig: gig.serialize(), gigs))
+                gigs = list(map(lambda gig: gig.gigsReducido(), gigs))
                 return jsonify(gigs), 200
         else:
             return jsonify({"msg": "Cuenta no existe en nuestros registros"}), 401

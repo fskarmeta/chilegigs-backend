@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: c2db1c1dbe58
+Revision ID: ba05566d204d
 Revises: 
-Create Date: 2020-12-14 02:35:47.594270
+Create Date: 2020-12-14 23:46:48.027671
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'c2db1c1dbe58'
+revision = 'ba05566d204d'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -103,6 +103,7 @@ def upgrade():
     sa.Column('nombre_evento', sa.String(length=100), nullable=True),
     sa.Column('telefono', sa.String(length=100), nullable=True),
     sa.Column('direccion', sa.String(length=100), nullable=True),
+    sa.Column('duracion', sa.String(length=100), nullable=True),
     sa.Column('hora_llegada', sa.String(length=100), nullable=True),
     sa.Column('hora_show', sa.String(length=100), nullable=True),
     sa.Column('transporte', sa.String(length=100), nullable=True),
@@ -112,6 +113,7 @@ def upgrade():
     sa.Column('leido_por_dj', sa.Boolean(), server_default=sa.text('false'), nullable=True),
     sa.Column('leido_por_cliente', sa.Boolean(), server_default=sa.text('false'), nullable=True),
     sa.Column('mensaje', sa.String(length=10000), nullable=True),
+    sa.Column('time_created', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['client_id'], ['account.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['dj_id'], ['account.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
