@@ -285,6 +285,7 @@ class Gig(db.Model):
     def gigsReducido(self):
         return {
             "id": self.id,
+            "dj_id": self.dj_id,
             "username_cliente": self.username_cliente,
             "username_dj": self.username_dj,
             "dia_evento": self.dia_evento,
