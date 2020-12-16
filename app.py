@@ -585,6 +585,59 @@ def gigRegister():
         else:
             return jsonify({"msg": "Solamente clientes pueden hacer booking"}), 401
 
+
+## Aactualizar un gig 
+@app.route('/gig/update/<int:id>', methods=['PUT'])
+@jwt_required
+def gigUpdate(id):
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first()
+        gig = Gig.query.filter_by(id=id).first()
+        if account.role_id == 3 or account.role_id == 2:
+
+            estado = request.json.get("estado", None)
+            username_cliente = request.json.get("username_cliente", None)
+            username_dj = request.json.get("username_dj", None)
+            dia_evento = request.json.get("dia_evento", None)
+            tipo_evento = request.json.get("tipo_evento", None)
+            duracion = request.json.get("duracion", None)
+            nombre_evento = request.json.get("nombre_evento", None)
+            telefono = request.json.get("telefono", None)
+            direccion = request.json.get("direccion", None)
+            hora_llegada = request.json.get("hora_llegada", None)
+            hora_show = request.json.get("hora_show", None)
+            transporte = request.json.get("transporte", None)
+            oferta = request.json.get("oferta", None)
+            link_evento = request.json.get("link_evento")
+            privado = request.json.get("privado", None)
+            leido_por_dj = request.json.get("leido_por_dj", None)
+            leido_por_cliente = request.json.get("leido_por_cliente", None)
+            mensaje = request.json.get("mensaje", None)
+
+
+            gig.estado = estado
+            gig.username_cliente = username_cliente
+            gig.username_dj = username_dj
+            gig.duracion = duracion
+            gig.dia_evento = dia_evento
+            gig.tipo_evento = tipo_evento
+            gig.nombre_evento = nombre_evento
+            gig.telefono = telefono
+            gig.direccion = direccion
+            gig.hora_llegada = hora_llegada
+            gig.hora_show = hora_show
+            gig.transporte = transporte
+            gig.oferta = oferta
+            gig.link_evento = link_evento
+            gig.privado = privado
+            gig.leido_por_dj = leido_por_dj
+            gig.leido_por_cliente = leido_por_cliente
+            gig.mensaje = json.dumps(mensaje)
+            gig.update()
+            return jsonify(gig.serialize()), 201
+        else:
+            return jsonify({"msg": "No tienes los permisos para hacer estos cambios"}), 401
+
 ## Recibir un gig completo 
 @app.route('/gig/<int:id>', methods=['GET'])
 @jwt_required
