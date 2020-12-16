@@ -3,7 +3,7 @@ import json
 from flask import Flask, render_template, request, jsonify
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
-from models import db, Roles, Account, DjProfile, ClientProfile, ObjetosGlobales
+from models import db, Roles, Account, DjProfile, ClientProfile, ObjetosGlobales, Gig
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, get_raw_jwt
@@ -74,6 +74,7 @@ def getHome():
     username = get_jwt_identity()
     account = Account.query.filter_by(username=username).first()
     home = request.get_json()
+    print(home)
     if account:
         if account.role_id == 1:
             objetosglobales = ObjetosGlobales.query.first()
@@ -104,8 +105,7 @@ def getReq():
     else:
         return json({"msg": "No existe tal cuenta de usuario"}), 400
 
-## Crear y borrar Cuenta, en la tabla de roles en su workbench generar 3 tipos de cuenta
-## Id queda vacío, nombre (una cliente, otra dj, otra admin), en status insertar un 1
+##Crear cuenta e inicializar perfil
 @app.route('/user/register', methods=['POST', 'DELETE'])
 def register():
     if request.method == 'POST':
@@ -140,6 +140,7 @@ def register():
         if account.role_id == 2:
             dj = DjProfile()
             dj.dj_id = account.id
+            dj.username = account.username
             dj.artista = ""
             dj.ciudad = ""
             dj.status = "inactive"
@@ -198,7 +199,7 @@ def updateUsername():
     else:
         return jsonify({"msg": "Tienes que volver a logearte"}), 401
 
-## Actualizar contraseña de usuario
+## Actualizar contraseña de usuario al recuperar constraseña
 @app.route('/user/update/password', methods=['PUT'])
 @jwt_required
 def updatePassword():
@@ -208,10 +209,27 @@ def updatePassword():
     if account:
         account.password = generate_password_hash(newpassword)
         account.update()
-        return jsonify(account.serialize())
+        return jsonify(account.serialize()), 201
     else:
         return jsonify({"msg": "Tienes que volver a logearte"}), 401
 
+## Actualizar contraseña de usuario desde cuenta
+@app.route('/account/update/password', methods=['PUT'])
+@jwt_required
+def updatePasswordFromAccount():
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    oldpassword = request.json.get("old_password")
+    newpassword = request.json.get("new_password")
+    if account:
+        if  check_password_hash(account.password, oldpassword):
+            account.password = generate_password_hash(newpassword)
+            account.update()
+            return jsonify({"success": "Contraseña ha sido actualizada exitosamente"}), 201
+        else:
+            return jsonify({"msg": "Clave antigua incorrecta"}), 401
+    else:
+        return jsonify({"msg": "No se pudo encontrar a este usuario"}), 401
 ## Actualizar Email de cuenta de usuario (validar que no exista ya)
 @app.route('/user/update/email', methods=['PUT'])
 @jwt_required
@@ -334,7 +352,7 @@ def profile():
                 requisitos = request.json.get("requisitos")
                 datos = request.json.get("datos")
                 
-                print(agregar_cancion)
+                
                 # if not imagen:
                 #     return jsonify({"msg": "Se requiere una imagen del perfil"}), 400
                 # if not artista:
@@ -386,7 +404,7 @@ def profile():
                 if biografia:
                     djprofile.biografia = biografia
                 if dur_min:
-                    djprofile.dur_min = dur_max
+                    djprofile.dur_min = dur_min
                 if dur_max:
                     djprofile.dur_max = dur_max
                 if staff:
@@ -446,7 +464,7 @@ def profile():
                 return jsonify(clientprofile.serialize()), 201
 
         else:
-            return jsonify({"msg": "Usuario no es un DJ o Cliente"})
+            return jsonify({"msg": "Usuario no es un DJ o Cliente"}), 401
 
 ## Ruta para recibir un perfil completo de DJ con ID (solo para usuario logeado) (tmb sirve para cliente really)
 @app.route('/dj/profile/<int:dj_id>', methods=['GET'])
@@ -504,11 +522,169 @@ def getClientProfile(usuario):
 @app.route('/profiles', methods=['GET'])
 def profiles():
     profiles = DjProfile.query.filter_by(status="active").all()
-    profiles = list(map(lambda profile: profile.card(), profiles))
-    return jsonify(profiles), 200
+    if profiles:
+        profiles = list(map(lambda profile: profile.card(), profiles))
+        return jsonify(profiles), 200
+    else:
+        return jsonify({"msg": "No hay perfiles activos"}), 401
 
 
 ## ACA EN ADELANTE VIENEN LOS GIGGGSSSS
+
+
+##Registar Gig
+@app.route('/gig/register', methods=['POST'])
+@jwt_required
+def gigRegister():
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first()
+        if account.role_id == 3:
+            client_id = request.json.get("client_id", None)
+            dj_id = request.json.get("dj_id", None)
+            estado = request.json.get("estado", None)
+            username_cliente = request.json.get("username_cliente", None)
+            username_dj = request.json.get("username_dj", None)
+            dia_evento = request.json.get("dia_evento", None)
+            tipo_evento = request.json.get("tipo_evento", None)
+            duracion = request.json.get("duracion", None)
+            nombre_evento = request.json.get("nombre_evento", None)
+            telefono = request.json.get("telefono", None)
+            direccion = request.json.get("direccion", None)
+            hora_llegada = request.json.get("hora_llegada", None)
+            hora_show = request.json.get("hora_show", None)
+            transporte = request.json.get("transporte", None)
+            oferta = request.json.get("oferta", None)
+            link_evento = request.json.get("link_evento")
+            privado = request.json.get("privado", None)
+            leido_por_dj = request.json.get("leido_por_dj", None)
+            leido_por_cliente = request.json.get("leido_por_cliente", None)
+            mensaje = request.json.get("mensaje", None)
+
+            gig = Gig()
+            gig.client_id = client_id
+            gig.dj_id = dj_id
+            gig.estado = estado
+            gig.username_cliente = username_cliente
+            gig.username_dj = username_dj
+            gig.duracion = duracion
+            gig.dia_evento = dia_evento
+            gig.tipo_evento = tipo_evento
+            gig.nombre_evento = nombre_evento
+            gig.telefono = telefono
+            gig.direccion = direccion
+            gig.hora_llegada = hora_llegada
+            gig.hora_show = hora_show
+            gig.transporte = transporte
+            gig.oferta = oferta
+            gig.link_evento = link_evento
+            gig.privado = privado
+            gig.leido_por_dj = leido_por_dj
+            gig.leido_por_cliente = leido_por_cliente
+            gig.mensaje = json.dumps(mensaje)
+            gig.save()
+            return jsonify(gig.serialize()), 201
+        else:
+            return jsonify({"msg": "Solamente clientes pueden hacer booking"}), 401
+
+
+## Aactualizar un gig 
+@app.route('/gig/update/<int:id>', methods=['PUT'])
+@jwt_required
+def gigUpdate(id):
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first()
+        gig = Gig.query.filter_by(id=id).first()
+        if account.role_id == 3 or account.role_id == 2:
+
+            estado = request.json.get("estado", None)
+            username_cliente = request.json.get("username_cliente", None)
+            username_dj = request.json.get("username_dj", None)
+            dia_evento = request.json.get("dia_evento", None)
+            tipo_evento = request.json.get("tipo_evento", None)
+            duracion = request.json.get("duracion", None)
+            nombre_evento = request.json.get("nombre_evento", None)
+            telefono = request.json.get("telefono", None)
+            direccion = request.json.get("direccion", None)
+            hora_llegada = request.json.get("hora_llegada", None)
+            hora_show = request.json.get("hora_show", None)
+            transporte = request.json.get("transporte", None)
+            oferta = request.json.get("oferta", None)
+            link_evento = request.json.get("link_evento")
+            privado = request.json.get("privado", None)
+            leido_por_dj = request.json.get("leido_por_dj", None)
+            leido_por_cliente = request.json.get("leido_por_cliente", None)
+            mensaje = request.json.get("mensaje", None)
+
+
+            gig.estado = estado
+            gig.username_cliente = username_cliente
+            gig.username_dj = username_dj
+            gig.duracion = duracion
+            gig.dia_evento = dia_evento
+            gig.tipo_evento = tipo_evento
+            gig.nombre_evento = nombre_evento
+            gig.telefono = telefono
+            gig.direccion = direccion
+            gig.hora_llegada = hora_llegada
+            gig.hora_show = hora_show
+            gig.transporte = transporte
+            gig.oferta = oferta
+            gig.link_evento = link_evento
+            gig.privado = privado
+            gig.leido_por_dj = leido_por_dj
+            gig.leido_por_cliente = leido_por_cliente
+            gig.mensaje = json.dumps(mensaje)
+            gig.update()
+            return jsonify(gig.serialize()), 201
+        else:
+            return jsonify({"msg": "No tienes los permisos para hacer estos cambios"}), 401
+
+## Recibir un gig completo 
+@app.route('/gig/<int:id>', methods=['GET'])
+@jwt_required
+def getGig(id):
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first()
+        if account:
+            gig = Gig.query.filter_by(id=id).first()
+            if gig.client_id == account.id or gig.dj_id == account.id or account.role_id == 1:
+                return jsonify(gig.serialize()), 201
+            else:
+                return jsonify({"msg": "No tienes permiso para acceder a la información de este gig"}), 201
+        else:
+            return jsonify({"msg": "No existe tu cuenta en nuestro registro"}), 401
+
+## Recibir todos los gigs asociados al ID de una cuenta
+@app.route('/account/gig', methods=['GET'])
+@jwt_required
+def getGigByAccount():
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first()
+        if account:
+            if account.role_id == 2:
+                gigs = Gig.query.filter_by(dj_id=account.id).all()
+                gigs = list(map(lambda gig: gig.gigsReducido(), gigs))
+                return jsonify(gigs), 201
+            if account.role_id == 3:
+                gigs = Gig.query.filter_by(client_id=account.id).all()
+                gigs = list(map(lambda gig: gig.gigsReducido(), gigs))
+                return jsonify(gigs), 200
+        else:
+            return jsonify({"msg": "Cuenta no existe en nuestros registros"}), 401
+
+## Recibir todos los gigs existentes (solo para admin)
+@app.route('/admin/gigs', methods=['GET'])
+@jwt_required
+def getAllGigs():
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first() 
+        if account.role_id == 1:
+            gigs = Gig.query.all()
+            gigs = list(map(lambda gig: gig.serialize(), gigs))
+            return jsonify(gigs), 201
+        else:
+            return jsonify({"msg": "Cuenta no tiene derechos sobre esta información"}), 401    
+
 @manager.command
 def load_globales():
     role = Roles()

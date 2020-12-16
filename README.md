@@ -17,14 +17,8 @@ pipenv run migrate
 
 pipenv run upgrade
 
-en workbench en la tabla de roles, crear una fila respectiva para admin,dj,cliente, status dejar inicialiado en "1" -> apply
+pipenv run loaddata
 
-(1 para admin, 2 para dj, 3 para cliente!)
+(Este último comando creará 3 roles, admin (1), cliente (2), dj (3))
 
-nuevamente ejecutar un migrate y upgrade. Con esto ya puedes crear cuenta en el insomia y logearte.
-
-Con el token, crear perfil.
-
-##
-
-PD: No Tutorial, No Templates :)
+Unica forma de crear una cuenta admin es a través de insomia o postman.
