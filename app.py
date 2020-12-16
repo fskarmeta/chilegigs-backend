@@ -74,6 +74,7 @@ def getHome():
     username = get_jwt_identity()
     account = Account.query.filter_by(username=username).first()
     home = request.get_json()
+    print(home)
     if account:
         if account.role_id == 1:
             objetosglobales = ObjetosGlobales.query.first()
