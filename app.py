@@ -185,7 +185,7 @@ def register():
         else:
            return jsonify({"msg": "No existe tal cuenta"}) 
 
-## Borrar cuenta de usuario
+## Borrar cuenta de usuario desde un usuario
 @app.route('/user/delete', methods=['DELETE'])
 @jwt_required
 def deleteAccount():
@@ -201,6 +201,20 @@ def deleteAccount():
             return jsonify({"msg": "Contraseña incorrecta"}), 401
     else:
         return jsonify({"msg": "No se pudo encontrar a este usuario"}), 401
+
+## Admin borra cuenta de usuario
+
+@app.route('/admin/accounts/delete/<int:id>', methods=['DELETE'])
+@jwt_required
+def deleteAccountfromAdmin(id):
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    if account.role_id == 1:
+            accountToDelete = Account.query.filter_by(id=id).first()
+            accountToDelete.delete()
+            return jsonify({"success": "Cuenta ha sido borrada exitosamente"}), 201
+    else:
+        return jsonify({"msg": "Usuario no tiene los permisos para ejercer esta acción"}), 401
 
 
 ##Traer todas las cuentas exístentes para el admin
