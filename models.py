@@ -247,6 +247,7 @@ class Gig(db.Model):
     hora_show = db.Column(db.String(100))
     transporte = db.Column(db.String(100))
     oferta = db.Column(db.String(100))
+    artist_name = db.Column(db.String(100), default="")
     link_evento = db.Column(db.String(100), nullable=True, default="")
     privado = db.Column(db.Boolean, server_default=expression.false())
     leido_por_dj = db.Column(db.Boolean, server_default=expression.false())
@@ -278,7 +279,8 @@ class Gig(db.Model):
             "leido_por_dj": self.leido_por_dj,
             "leido_por_cliente": self.leido_por_cliente,
             "mensaje": json.loads(self.mensaje),
-            "time_created": self.time_created
+            "time_created": self.time_created,
+            "artist_name": self.artist_name
         }
 
     def gigsReducido(self):
@@ -292,7 +294,8 @@ class Gig(db.Model):
             "nombre_evento": self.nombre_evento,
             "leido_por_cliente": self.leido_por_cliente,
             "leido_por_dj": self.leido_por_dj,
-            "estado": self.estado
+            "estado": self.estado,
+            "artist_name": self.artist_name
         }
 
     def save(self):

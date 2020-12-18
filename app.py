@@ -195,8 +195,16 @@ def deleteAccount():
 
     if account.role_id != 1:
         if  check_password_hash(account.password, password):
-            account.delete()
-            return jsonify({"success": "Cuenta ha sido borrada exitosamente"}), 201
+            if account.role_id == 2:
+                profile = DjProfile.query.filter_by(dj_id=account.id).first()
+                profile.delete()
+                account.delete()
+                return jsonify({"success": "Cuenta y perfil han sido borrados exitosamente"}), 201
+            if account.role_id == 3:
+                profile = ClientProfile.query.filter_by(client_id=account.id).first()
+                profile.delete()
+                account.delete()
+                return jsonify({"success": "Cuenta y perfil han sido borrados exitosamente"}), 201
         else:
             return jsonify({"msg": "Contraseña incorrecta"}), 401
     else:
@@ -211,8 +219,16 @@ def deleteAccountfromAdmin(id):
     account = Account.query.filter_by(username=username).first()
     if account.role_id == 1:
             accountToDelete = Account.query.filter_by(id=id).first()
-            accountToDelete.delete()
-            return jsonify({"success": "Cuenta ha sido borrada exitosamente"}), 201
+            if accountToDelete.role_id == 2:
+                profileToDelete = DjProfile.query.filter_by(dj_id=id).first()
+                profileToDelete.delete()
+                accountToDelete.delete()
+                return jsonify({"success": "Cuenta y perfil han sido borrados exitosamente"}), 201
+            if accountToDelete.role_id == 3:
+                profileToDelete = ClientProfile.query.filter_by(client_id=id).first()
+                profileToDelete.delete()
+                accountToDelete.delete()
+                return jsonify({"success": "Cuenta y perfil han sido borrados exitosamente"}), 201
     else:
         return jsonify({"msg": "Usuario no tiene los permisos para ejercer esta acción"}), 401
 
@@ -643,6 +659,7 @@ def gigRegister():
             leido_por_dj = request.json.get("leido_por_dj", None)
             leido_por_cliente = request.json.get("leido_por_cliente", None)
             mensaje = request.json.get("mensaje", None)
+            artist_name = request.json.get("artist_name")
 
             gig = Gig()
             gig.client_id = client_id
@@ -665,6 +682,7 @@ def gigRegister():
             gig.leido_por_dj = leido_por_dj
             gig.leido_por_cliente = leido_por_cliente
             gig.mensaje = json.dumps(mensaje)
+            gig.artist_name = artist_name
             gig.save()
             return jsonify(gig.serialize()), 201
         else:
