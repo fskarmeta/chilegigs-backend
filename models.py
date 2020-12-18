@@ -71,7 +71,6 @@ class Account(db.Model):
             "username": self.username,
             "email": self.email,
             "time_created": self.time_created
-            # "perfil_dj": self.perfil_dj.serialize()
         }
 
     def save(self):

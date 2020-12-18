@@ -185,19 +185,88 @@ def register():
         else:
            return jsonify({"msg": "No existe tal cuenta"}) 
 
-## Actualizar nombre de cuenta de usuario (esto no va)
-@app.route('/user/update/username', methods=['PUT'])
+## Borrar cuenta de usuario
+@app.route('/user/delete', methods=['DELETE'])
 @jwt_required
-def updateUsername():
-    newusername = request.json.get("username")
+def deleteAccount():
     username = get_jwt_identity()
     account = Account.query.filter_by(username=username).first()
-    if account:
-        account.username = newusername
-        account.update()
-        return jsonify(account.serialize())
+    password = request.json.get("password")
+
+    if account.role_id != 1:
+        if  check_password_hash(account.password, password):
+            account.delete()
+            return jsonify({"success": "Cuenta ha sido borrada exitosamente"}), 201
+        else:
+            return jsonify({"msg": "Contraseña incorrecta"}), 401
     else:
-        return jsonify({"msg": "Tienes que volver a logearte"}), 401
+        return jsonify({"msg": "No se pudo encontrar a este usuario"}), 401
+
+
+##Traer todas las cuentas exístentes para el admin
+@app.route('/admin/accounts', methods=['GET'])
+@jwt_required
+def getAllAccounts():
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    if account.role_id == 1:
+        accounts = Account.query.all()
+        accounts = list(map(lambda account: account.serialize(), accounts))
+        return jsonify(accounts), 201
+    else:
+        return jsonify({"msg": "Solamente el dj puede acceder a esta información"}), 401
+
+##Traer todas las cuentas de CLIENTE exístentes para el admin
+@app.route('/admin/accounts/clients', methods=['GET'])
+@jwt_required
+def getAllClientsAccounts():
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    if account.role_id == 1:
+        accounts = Account.query.filter_by(role_id=3).all()
+        accounts = list(map(lambda account: account.serialize(), accounts))
+        return jsonify(accounts), 201
+    else:
+        return jsonify({"msg": "Solamente el dj puede acceder a esta información"}), 401
+
+##Traer todas las cuentas de DJ exístentes para el admin
+@app.route('/admin/accounts/djs', methods=['GET'])
+@jwt_required
+def getAllDjsAccounts():
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    if account.role_id == 1:
+        accounts = Account.query.filter_by(role_id=2).all()
+        accounts = list(map(lambda account: account.serialize(), accounts))
+        return jsonify(accounts), 201
+    else:
+        return jsonify({"msg": "Solamente el dj puede acceder a esta información"}), 401
+
+##Traer Info general para Admin
+@app.route('/admin/accounts/info', methods=['GET'])
+@jwt_required
+def getInfo():
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    if account.role_id == 1:
+        djAmount = Account.query.filter_by(role_id=2).count()
+        clientAmount = Account.query.filter_by(role_id=3).count()
+        lastTenDjs = Account.query.filter_by(role_id=2).order_by(Account.id.desc()).limit(10)
+        lastDjs = list(map(lambda account: account.serialize(), lastTenDjs))
+        lastTenClients = Account.query.filter_by(role_id=3).order_by(Account.id.desc()).limit(10)
+        lastClients = list(map(lambda account: account.serialize(), lastTenClients))
+        # clientsAccountsList = list(map(lambda account: account.serialize(), clientsAccounts))
+
+
+        data = {
+            "djs": djAmount,
+            "clients": clientAmount,
+            "lastdjs": lastDjs,
+            "lastclients": lastClients
+        }
+        return jsonify(data), 201
+    else:
+        return jsonify({"msg": "Solamente el dj puede acceder a esta información"}), 401
 
 ## Actualizar contraseña de usuario al recuperar constraseña
 @app.route('/user/update/password', methods=['PUT'])
@@ -230,23 +299,24 @@ def updatePasswordFromAccount():
             return jsonify({"msg": "Clave antigua incorrecta"}), 401
     else:
         return jsonify({"msg": "No se pudo encontrar a este usuario"}), 401
-## Actualizar Email de cuenta de usuario (validar que no exista ya)
-@app.route('/user/update/email', methods=['PUT'])
-@jwt_required
-def updateEmail():
-    newemail = request.json.get("email")
-    username = get_jwt_identity()
-    account = Account.query.filter_by(username=username).first()
-    email = Account.query.filter_by(email=newemail).first()
-    if account:
-        if email:
-            return jsonify({"msg": "Email ya esta en uso"})
-        else:
-            account.email = newemail
-            account.update()
-            return jsonify(account.serialize())
-    else:
-        return jsonify({"msg": "Tienes que volver a logearte"}), 401
+
+# ## Actualizar Email de cuenta de usuario (validar que no exista ya)
+# @app.route('/user/update/email', methods=['PUT'])
+# @jwt_required
+# def updateEmail():
+#     newemail = request.json.get("email")
+#     username = get_jwt_identity()
+#     account = Account.query.filter_by(username=username).first()
+#     email = Account.query.filter_by(email=newemail).first()
+#     if account:
+#         if email:
+#             return jsonify({"msg": "Email ya esta en uso"})
+#         else:
+#             account.email = newemail
+#             account.update()
+#             return jsonify(account.serialize())
+#     else:
+#         return jsonify({"msg": "Tienes que volver a logearte"}), 401
 
 #Chequear token del store
 @app.route('/user/autologin', methods=['POST'])

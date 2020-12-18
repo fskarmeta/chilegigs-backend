@@ -22,3 +22,7 @@ pipenv run loaddata
 (Este último comando creará 3 roles, admin (1), cliente (2), dj (3))
 
 Unica forma de crear una cuenta admin es a través de insomia o postman.
+
+
+link al front end:
+https://github.com/fskarmeta/chilegigs-project
