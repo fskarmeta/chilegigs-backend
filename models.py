@@ -59,10 +59,8 @@ class Account(db.Model):
     password = db.Column(db.String(100))
     time_created = db.Column(db.DateTime, nullable=False,
         default=datetime.utcnow)
-
     client_profile = db.relationship('ClientProfile', backref="clientaccount", lazy=True)
     dj_profile = db.relationship('DjProfile', backref="djaccount", lazy=True)
-  
 
     def serialize(self):
         return {
@@ -114,7 +112,7 @@ class DjProfile(db.Model):
     suma_rating = db.Column(db.Integer, nullable=True, default=0)
     contrataciones = db.Column(db.Integer, nullable=True, default=0)
     feedback = db.Column(db.String(1000), nullable=True, default="[]")
-    # dj_profile = db.relationship('Account', backref="perfil_dj", lazy=True)
+ 
 
     def serialize(self):
         return {
@@ -292,6 +290,9 @@ class Gig(db.Model):
             "dia_evento": self.dia_evento,
             "hora_llegada": self.hora_llegada,
             "nombre_evento": self.nombre_evento,
+            "hora_show": self.hora_show,
+            "link_evento": self.link_evento,
+            "privado": self.privado,
             "leido_por_cliente": self.leido_por_cliente,
             "leido_por_dj": self.leido_por_dj,
             "estado": self.estado,

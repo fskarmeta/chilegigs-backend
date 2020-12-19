@@ -55,11 +55,7 @@ def send_password():
     else:
         return jsonify({"msg": "Tienes que ingresar un email"}), 401
 
-
-
-
-
-    
+############################ OBJETOS GLOBALES #########################################
 
 ## recibir objeto globales
 @app.route('/objetos', methods=['GET'])
@@ -104,6 +100,9 @@ def getReq():
             return jsonify({"msg": "Usuario no tiene permiso para hacer estos cambios"}),400
     else:
         return json({"msg": "No existe tal cuenta de usuario"}), 400
+
+
+############################ CUENTA #################################
 
 ##Crear cuenta e inicializar perfil
 @app.route('/user/register', methods=['POST', 'DELETE'])
@@ -210,8 +209,10 @@ def deleteAccount():
     else:
         return jsonify({"msg": "No se pudo encontrar a este usuario"}), 401
 
-## Admin borra cuenta de usuario
 
+####################### CUENTAS DESDE ADMIN ########################################
+
+## Admin borra cuenta de usuario
 @app.route('/admin/accounts/delete/<int:id>', methods=['DELETE'])
 @jwt_required
 def deleteAccountfromAdmin(id):
@@ -298,6 +299,9 @@ def getInfo():
     else:
         return jsonify({"msg": "Solamente el dj puede acceder a esta información"}), 401
 
+
+#################### CONTRASEÑA USUARIO #####################################
+
 ## Actualizar contraseña de usuario al recuperar constraseña
 @app.route('/user/update/password', methods=['PUT'])
 @jwt_required
@@ -347,6 +351,9 @@ def updatePasswordFromAccount():
 #             return jsonify(account.serialize())
 #     else:
 #         return jsonify({"msg": "Tienes que volver a logearte"}), 401
+
+
+######################### LOGIN #############################
 
 #Chequear token del store
 @app.route('/user/autologin', methods=['POST'])
@@ -416,6 +423,9 @@ def logout():
     blacklist.add(jti)
     return jsonify({"msg": "Successfully logged out"}), 200
 
+
+############################### PERFILES ######################################
+
 ## actualizar perfil de DJ o de Cliente
 @app.route('/profile', methods=['PUT'])
 @jwt_required
@@ -453,22 +463,6 @@ def profile():
                 datos = request.json.get("datos")
                 
                 
-                # if not imagen:
-                #     return jsonify({"msg": "Se requiere una imagen del perfil"}), 400
-                # if not artista:
-                #     return jsonify({"msg": "Se requiere nombre de artista"}), 400
-                # if not ciudad:
-                #     return jsonify({"msg": "Se requiere que incluyas una ciudad de origen"}), 400
-                # if not pais:
-                #     return jsonify({"msg": "Se requiere que incluyas un pais de origen"}), 400
-                # if not generos:
-                #     return jsonify({"msg": "Se requiere que incluyas como minimo un genero"}), 400
-                # if not servicios:
-                #     return jsonify({"msg": "Se requiere que incluyas como minimo un servicio"}), 400
-                # if not tecnica:
-                #     return jsonify({"msg": "Se requiere que especifiques una técnica"}), 400
-                # if not status:
-                #     return jsonify({"msg": "Se requiere que se active el status de perfil"}), 400
 
 
                 #campos obligatorios
@@ -588,7 +582,14 @@ def getDjProfileWithUsername(usuario):
         if account.role_id == 1 or account.role_id == 2 or account.role_id == 3:
             djaccount = Account.query.filter_by(username=usuario).first()
             profile = DjProfile.query.filter_by(dj_id=djaccount.id).first()
-            return jsonify(profile.serialize()), 201
+            gigs = Gig.query.filter_by(dj_id=djaccount.id).filter_by(estado="Confirmado").all()
+            gigs = list(map(lambda gig: gig.gigsReducido(), gigs))
+
+            data = {
+                "profile": profile.serialize(),
+                "gigs": gigs
+            }
+            return jsonify(data), 201
         else:
             return jsonify({"msg": "Porfavor iniciar session o crear cuenta para ver este contenido"}), 400
 
@@ -629,10 +630,10 @@ def profiles():
         return jsonify({"msg": "No hay perfiles activos"}), 401
 
 
-## ACA EN ADELANTE VIENEN LOS GIGGGSSSS
+########################################## GIGSSSSSSSSSSSSSS ###################################
 
 
-##Registar Gig
+##Registar Gig (Primer Booking)
 @app.route('/gig/register', methods=['POST'])
 @jwt_required
 def gigRegister():
@@ -786,6 +787,8 @@ def getAllGigs():
             return jsonify(gigs), 201
         else:
             return jsonify({"msg": "Cuenta no tiene derechos sobre esta información"}), 401    
+
+########## INICIAR ROLES Y OBJETOS GLOBALES AL LEVANTAR SERVER ##################################
 
 @manager.command
 def load_globales():
