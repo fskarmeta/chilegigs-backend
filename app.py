@@ -765,22 +765,7 @@ def getGig(id):
         else:
             return jsonify({"msg": "No existe tu cuenta en nuestro registro"}), 401
 
-## Formatear a Gig Leido Por DJ 
-# @app.route('/gig/read/<int:id>', methods=['POST'])
-# @jwt_required
-# def djReadGig(id):
-#         username = get_jwt_identity()
-#         account = Account.query.filter_by(username=username).first()
-#         if account:
-#             gig = Gig.query.filter_by(id=id).first()
-#             if gig.client_id == account.id or gig.dj_id == account.id or account.role_id == 1:
-#                 gig.leido_por_dj = True
-#                 gig.save()
-#                 return jsonify({"success": "Gig ha sido leido por Dj"}), 201
-#             else:
-#                 return jsonify({"msg": "No tienes permiso para acceder a la información de este gig"}), 201
-#         else:
-#             return jsonify({"msg": "No existe tu cuenta en nuestro registro"}), 401
+
 
 
 ## Recibir todos los gigs asociados al ID de una cuenta
@@ -809,7 +794,7 @@ def getAllGigs():
         account = Account.query.filter_by(username=username).first() 
         if account.role_id == 1:
             gigs = Gig.query.all()
-            gigs = list(map(lambda gig: gig.serialize(), gigs))
+            gigs = list(map(lambda gig: gig.gigsReducido(), gigs))
             return jsonify(gigs), 201
         else:
             return jsonify({"msg": "Cuenta no tiene derechos sobre esta información"}), 401    
