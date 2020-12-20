@@ -3,7 +3,7 @@ import json
 from flask import Flask, render_template, request, jsonify
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
-from models import db, Roles, Account, DjProfile, ClientProfile, ObjetosGlobales, Gig
+from models import db, Roles, Account, DjProfile, ClientProfile, ObjetosGlobales, Gig, Feedback
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, get_raw_jwt
@@ -584,10 +584,13 @@ def getDjProfileWithUsername(usuario):
             profile = DjProfile.query.filter_by(dj_id=djaccount.id).first()
             gigs = Gig.query.filter_by(dj_id=djaccount.id).filter_by(estado="Confirmado").all()
             gigs = list(map(lambda gig: gig.gigsReducido(), gigs))
+            feedbacks = Feedback.query.filter_by(dj_id=djaccount.id).filter_by(rated_by_client=True).all()
+            feedbacks = list(map(lambda feedback: feedback.serializeForDj(), feedbacks))
 
             data = {
                 "profile": profile.serialize(),
-                "gigs": gigs
+                "gigs": gigs,
+                "feedbacks": feedbacks
             }
             return jsonify(data), 201
         else:
@@ -615,7 +618,15 @@ def getClientProfile(usuario):
         if account.role_id == 1 or account.role_id == 2 or account.role_id == 3:
             clientaccount = Account.query.filter_by(username=usuario).first()
             profile = ClientProfile.query.filter_by(client_id=clientaccount.id).first()
-            return jsonify(profile.serialize()), 201
+            feedbacks = Feedback.query.filter_by(client_id=clientaccount.id).filter_by(rated_by_dj=True).all()
+            feedbacks = list(map(lambda feedback: feedback.serializeForClient(), feedbacks))
+
+            data = {
+                "profile": profile.serialize(),
+                "feedbacks": feedbacks
+            }
+
+            return jsonify(data), 201
         else:
             return jsonify({"msg": "Porfavor iniciar session o crear cuenta para ver este contenido"}), 400
 
@@ -685,6 +696,16 @@ def gigRegister():
             gig.mensaje = json.dumps(mensaje)
             gig.artist_name = artist_name
             gig.save()
+
+            feedback = Feedback()
+            feedback.gig_id = gig.id
+            feedback.client_id = client_id
+            feedback.dj_id = dj_id
+            feedback.client_username = username_cliente
+            feedback.dj_username = username_dj
+            feedback.dia_evento = dia_evento
+            feedback.nombre_evento = nombre_evento
+            feedback.save()
             return jsonify(gig.serialize()), 201
         else:
             return jsonify({"msg": "Solamente clientes pueden hacer booking"}), 401
@@ -798,6 +819,61 @@ def getAllGigs():
             return jsonify(gigs), 201
         else:
             return jsonify({"msg": "Cuenta no tiene derechos sobre esta información"}), 401    
+
+
+############################### FEEDBACKS #############################
+
+
+## Registrar Feedback
+@app.route('/user/feedback', methods=['PUT'])
+@jwt_required
+def putFeedback():
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first()
+        if account:
+            gig_id = request.json.get("gig_id", None)
+            message = request.json.get("message", None)
+            rating = request.json.get("rating", None)
+            feedback = Feedback.query.filter_by(gig_id=gig_id).first()
+            gig = Gig.query.filter_by(id=gig_id).first()
+            if feedback and gig:
+                if feedback.dj_id == account.id:
+                    clientprofile = ClientProfile.query.filter_by(client_id=feedback.client_id).first()
+                    clientprofile.suma_rating = clientprofile.suma_rating + rating
+                    clientprofile.contrataciones = clientprofile.contrataciones + 1
+                    clientprofile.update()
+                    feedback.by_dj_commentary = message
+                    feedback.by_dj_rating = rating
+                    feedback.rated_by_dj = True
+                    feedback.update()
+                    gig.feedback_dj = True
+                    if feedback.rated_by_client == True:
+                        gig.estado = "Terminado"
+                    gig.update()
+                    return jsonify(feedback.serialize()), 201
+                elif feedback.client_id == account.id:
+                    djprofile = DjProfile.query.filter_by(dj_id=feedback.dj_id).first()
+                    djprofile.suma_rating = djprofile.suma_rating + rating
+                    djprofile.contrataciones = djprofile.contrataciones + 1
+                    djprofile.update()
+                    feedback.by_client_commentary = message
+                    feedback.by_client_rating = rating
+                    feedback.rated_by_client = True
+                    feedback.update()
+                    gig.feedback_client = True
+                    if feedback.rated_by_dj == True:
+                        gig.estado = "Terminado"
+                    gig.update()
+                    return jsonify(feedback.serialize()), 201
+            else:
+                return jsonify({"msg": "Este feedback o gig ya no existe"}), 401
+        else:
+            return jsonify({"msg": "Usuario no esta autorizado para ejecer esta función"}), 401
+
+
+
+
+
 
 ########## INICIAR ROLES Y OBJETOS GLOBALES AL LEVANTAR SERVER ##################################
 
