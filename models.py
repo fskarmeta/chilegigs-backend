@@ -305,16 +305,6 @@ class Gig(db.Model):
             "feedback_dj": self.feedback_dj
         }
 
-    # def gigForFeedback(self):
-    #     return {
-    #         "id": self.id,
-    #         "dj_id": self.dj_id,
-    #         "client_id": self.client_id,
-    #         "username_cliente": self.username_cliente,
-    #         "username_dj": self.username_dj,
-    #         "dia_evento": self.dia_evento,
-    #         "nombre_evento": self.nombre_evento,
-    #     }
 
     def save(self):
         db.session.add(self)

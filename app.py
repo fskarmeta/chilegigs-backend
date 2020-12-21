@@ -34,6 +34,8 @@ def check_if_token_in_blacklist(decrypted_token):
 def main():
     return render_template('index.html')
 
+##################### E MAILS ###########################################################
+
 ## Recuperar contraseña
 @app.route('/recover/password', methods=['PUT'])
 def send_password():
@@ -54,6 +56,8 @@ def send_password():
             return jsonify({"msg": "Email no existe en nuestra base de datos"}), 401
     else:
         return jsonify({"msg": "Tienes que ingresar un email"}), 401
+
+
 
 ############################ OBJETOS GLOBALES #########################################
 
@@ -706,9 +710,20 @@ def gigRegister():
             feedback.dia_evento = dia_evento
             feedback.nombre_evento = nombre_evento
             feedback.save()
+            send_aviso_booking(nombre_evento, username_cliente, username_dj, dj_id)
             return jsonify(gig.serialize()), 201
         else:
             return jsonify({"msg": "Solamente clientes pueden hacer booking"}), 401
+
+
+## Email aviso nuevo booking
+def send_aviso_booking(nombre_evento, username_cliente,username_dj,dj_id):
+    account = Account.query.filter_by(id=dj_id).first()
+    msg = Message(f"{username_cliente} quiere que toques en su evento!", recipients=[account.email])
+    msg.html = f"<h1>Hola {username_dj} !</h1><br><h3>El cliente {username_cliente} te quiere contratar para el evento {nombre_evento}, visita <a href='http://localhost:3000/'>chilegigs</a> para ver más detalles.</h3>"
+    mail.send(msg)
+    return jsonify({"exito": "Email enviado"}), 200
+
 
 
 ## Aactualizar un gig 
@@ -759,9 +774,21 @@ def gigUpdate(id):
             gig.leido_por_cliente = leido_por_cliente
             gig.mensaje = json.dumps(mensaje)
             gig.update()
+            if account.role_id == 3:
+                send_aviso_cambios(nombre_evento, username_dj)
+            if account.role_id == 2:
+                send_aviso_cambios(nombre_evento, username_cliente)
             return jsonify(gig.serialize()), 201
         else:
             return jsonify({"msg": "No tienes los permisos para hacer estos cambios"}), 401
+
+#Email aviso cambios en el booking
+def send_aviso_cambios(nombre_evento, username):
+    account = Account.query.filter_by(username=username).first()
+    msg = Message(f"Tienes un nuevo mensaje en el evento {nombre_evento} !", recipients=[account.email])
+    msg.html = f"<h1>Hola {username} !</h1><br><h3>Te han dejado un nuevo mensaje en el booking del evento {nombre_evento}, visita <a href='http://localhost:3000/'>chilegigs</a> para ver más detalles.</h3>"
+    mail.send(msg)
+    return jsonify({"exito": "Email enviado"}), 200
 
 ## Recibir un gig completo 
 @app.route('/gig/<int:id>', methods=['GET'])
