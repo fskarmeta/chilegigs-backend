@@ -59,10 +59,8 @@ class Account(db.Model):
     password = db.Column(db.String(100))
     time_created = db.Column(db.DateTime, nullable=False,
         default=datetime.utcnow)
-
     client_profile = db.relationship('ClientProfile', backref="clientaccount", lazy=True)
     dj_profile = db.relationship('DjProfile', backref="djaccount", lazy=True)
-  
 
     def serialize(self):
         return {
@@ -71,7 +69,6 @@ class Account(db.Model):
             "username": self.username,
             "email": self.email,
             "time_created": self.time_created
-            # "perfil_dj": self.perfil_dj.serialize()
         }
 
     def save(self):
@@ -105,17 +102,17 @@ class DjProfile(db.Model):
     agregar_cancion = db.Column(db.Boolean, server_default=expression.false())
     url_cancion = db.Column(db.String(100), nullable=True, default="")
     biografia = db.Column(db.String(1000), nullable=True, default="")
-    dur_min = db.Column(db.String(10), nullable=True, default="")
-    dur_max = db.Column(db.String(10), nullable=True, default="")
-    viajes = db.Column(db.String(10), nullable=True, default="")
+    dur_min = db.Column(db.String(100), nullable=True, default="")
+    dur_max = db.Column(db.String(100), nullable=True, default="")
+    viajes = db.Column(db.String(100), nullable=True, default="")
     staff = db.Column(db.Integer, nullable=True, default=0)
-    arrienda_equipos = db.Column(db.String(10), nullable=True, default="No")
+    arrienda_equipos = db.Column(db.String(100), nullable=True, default="No")
     requisitos = db.Column(db.String(1000), nullable=True, default="[]")
     datos = db.Column(db.String(1000), nullable=True, default="[]")
     suma_rating = db.Column(db.Integer, nullable=True, default=0)
     contrataciones = db.Column(db.Integer, nullable=True, default=0)
     feedback = db.Column(db.String(1000), nullable=True, default="[]")
-    # dj_profile = db.relationship('Account', backref="perfil_dj", lazy=True)
+ 
 
     def serialize(self):
         return {
@@ -159,6 +156,8 @@ class DjProfile(db.Model):
             "mixcloud": self.mixcloud,
             "soundcloud": self.soundcloud,
             "instagram": self.instagram,
+            "suma_rating": self.suma_rating,
+            "contrataciones": self.contrataciones,
             "generos": json.loads(self.generos),
             "servicios": json.loads(self.servicios),
             "tecnica": self.tecnica,
@@ -248,6 +247,7 @@ class Gig(db.Model):
     hora_show = db.Column(db.String(100))
     transporte = db.Column(db.String(100))
     oferta = db.Column(db.String(100))
+    artist_name = db.Column(db.String(100), default="")
     link_evento = db.Column(db.String(100), nullable=True, default="")
     privado = db.Column(db.Boolean, server_default=expression.false())
     leido_por_dj = db.Column(db.Boolean, server_default=expression.false())
@@ -255,6 +255,8 @@ class Gig(db.Model):
     mensaje = db.Column(db.String(10000))
     time_created = db.Column(db.DateTime, nullable=False,
     default=datetime.utcnow)
+    feedback_client = db.Column(db.Boolean, server_default=expression.false())
+    feedback_dj = db.Column(db.Boolean, server_default=expression.false())
 
     def serialize(self):
         return {
@@ -279,7 +281,8 @@ class Gig(db.Model):
             "leido_por_dj": self.leido_por_dj,
             "leido_por_cliente": self.leido_por_cliente,
             "mensaje": json.loads(self.mensaje),
-            "time_created": self.time_created
+            "time_created": self.time_created,
+            "artist_name": self.artist_name
         }
 
     def gigsReducido(self):
@@ -291,9 +294,83 @@ class Gig(db.Model):
             "dia_evento": self.dia_evento,
             "hora_llegada": self.hora_llegada,
             "nombre_evento": self.nombre_evento,
+            "hora_show": self.hora_show,
+            "link_evento": self.link_evento,
+            "privado": self.privado,
             "leido_por_cliente": self.leido_por_cliente,
             "leido_por_dj": self.leido_por_dj,
-            "estado": self.estado
+            "estado": self.estado,
+            "artist_name": self.artist_name,
+            "feedback_client": self.feedback_client,
+            "feedback_dj": self.feedback_dj
+        }
+
+
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def update(self):
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+
+class Feedback(db.Model):
+    __tablename__ = "feedback"
+    id = db.Column(db.Integer, primary_key=True)
+    gig_id = db.Column(db.Integer)
+    client_id = db.Column(db.Integer)
+    dj_id = db.Column(db.Integer)
+    client_username = db.Column(db.String(100))
+    dj_username = db.Column(db.String(100))
+    dia_evento = db.Column(db.String(100))
+    nombre_evento = db.Column(db.String(100))
+    by_dj_commentary = db.Column(db.String(1000))
+    by_client_commentary = db.Column(db.String(1000))
+    by_dj_rating = db.Column(db.Integer)
+    by_client_rating = db.Column(db.Integer)
+    rated_by_dj = db.Column(db.Boolean, server_default=expression.false())
+    rated_by_client = db.Column(db.Boolean, server_default=expression.false())
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "gig_id": self.gig_id,
+            "client_id": self.client_id,
+            "dj_id": self.dj_id,
+            "client_username": self.client_username,
+            "dj_username": self.dj_username,
+            "dia_evento": self.dia_evento,
+            "nombre_evento": self.nombre_evento,
+            "by_dj_commentary": self.by_dj_commentary,
+            "by_client_commentary": self.by_client_commentary,
+            "by_dj_rating": self.by_dj_rating,
+            "by_client_rating": self.by_client_rating,
+            "rated_by_dj": self.rated_by_dj,
+            "rated_by_client": self.rated_by_client
+        }
+    
+    def serializeForDj(self):
+        return {
+            "id": self.id,
+            "client_username": self.client_username,
+            "dia_evento": self.dia_evento,
+            "nombre_evento": self.nombre_evento,
+            "by_client_commentary": self.by_client_commentary,
+            "by_client_rating": self.by_client_rating
+        }
+
+    def serializeForClient(self):
+        return {
+            "id": self.id,
+            "dj_username": self.dj_username,
+            "dia_evento": self.dia_evento,
+            "nombre_evento": self.nombre_evento,
+            "by_dj_commentary": self.by_dj_commentary,
+            "by_dj_rating": self.by_dj_rating
         }
 
     def save(self):

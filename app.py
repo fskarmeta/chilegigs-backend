@@ -3,7 +3,7 @@ import json
 from flask import Flask, render_template, request, jsonify
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
-from models import db, Roles, Account, DjProfile, ClientProfile, ObjetosGlobales, Gig
+from models import db, Roles, Account, DjProfile, ClientProfile, ObjetosGlobales, Gig, Feedback
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, get_raw_jwt
@@ -34,6 +34,8 @@ def check_if_token_in_blacklist(decrypted_token):
 def main():
     return render_template('index.html')
 
+##################### E MAILS ###########################################################
+
 ## Recuperar contraseña
 @app.route('/recover/password', methods=['PUT'])
 def send_password():
@@ -57,9 +59,7 @@ def send_password():
 
 
 
-
-
-    
+############################ OBJETOS GLOBALES #########################################
 
 ## recibir objeto globales
 @app.route('/objetos', methods=['GET'])
@@ -104,6 +104,9 @@ def getReq():
             return jsonify({"msg": "Usuario no tiene permiso para hacer estos cambios"}),400
     else:
         return json({"msg": "No existe tal cuenta de usuario"}), 400
+
+
+############################ CUENTA #################################
 
 ##Crear cuenta e inicializar perfil
 @app.route('/user/register', methods=['POST', 'DELETE'])
@@ -185,19 +188,123 @@ def register():
         else:
            return jsonify({"msg": "No existe tal cuenta"}) 
 
-## Actualizar nombre de cuenta de usuario (esto no va)
-@app.route('/user/update/username', methods=['PUT'])
+## Borrar cuenta de usuario desde un usuario
+@app.route('/user/delete', methods=['DELETE'])
 @jwt_required
-def updateUsername():
-    newusername = request.json.get("username")
+def deleteAccount():
     username = get_jwt_identity()
     account = Account.query.filter_by(username=username).first()
-    if account:
-        account.username = newusername
-        account.update()
-        return jsonify(account.serialize())
+    password = request.json.get("password")
+
+    if account.role_id != 1:
+        if  check_password_hash(account.password, password):
+            if account.role_id == 2:
+                profile = DjProfile.query.filter_by(dj_id=account.id).first()
+                profile.delete()
+                account.delete()
+                return jsonify({"success": "Cuenta y perfil han sido borrados exitosamente"}), 201
+            if account.role_id == 3:
+                profile = ClientProfile.query.filter_by(client_id=account.id).first()
+                profile.delete()
+                account.delete()
+                return jsonify({"success": "Cuenta y perfil han sido borrados exitosamente"}), 201
+        else:
+            return jsonify({"msg": "Contraseña incorrecta"}), 401
     else:
-        return jsonify({"msg": "Tienes que volver a logearte"}), 401
+        return jsonify({"msg": "No se pudo encontrar a este usuario"}), 401
+
+
+####################### CUENTAS DESDE ADMIN ########################################
+
+## Admin borra cuenta de usuario
+@app.route('/admin/accounts/delete/<int:id>', methods=['DELETE'])
+@jwt_required
+def deleteAccountfromAdmin(id):
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    if account.role_id == 1:
+            accountToDelete = Account.query.filter_by(id=id).first()
+            if accountToDelete.role_id == 2:
+                profileToDelete = DjProfile.query.filter_by(dj_id=id).first()
+                profileToDelete.delete()
+                accountToDelete.delete()
+                return jsonify({"success": "Cuenta y perfil han sido borrados exitosamente"}), 201
+            if accountToDelete.role_id == 3:
+                profileToDelete = ClientProfile.query.filter_by(client_id=id).first()
+                profileToDelete.delete()
+                accountToDelete.delete()
+                return jsonify({"success": "Cuenta y perfil han sido borrados exitosamente"}), 201
+    else:
+        return jsonify({"msg": "Usuario no tiene los permisos para ejercer esta acción"}), 401
+
+
+##Traer todas las cuentas exístentes para el admin
+@app.route('/admin/accounts', methods=['GET'])
+@jwt_required
+def getAllAccounts():
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    if account.role_id == 1:
+        accounts = Account.query.all()
+        accounts = list(map(lambda account: account.serialize(), accounts))
+        return jsonify(accounts), 201
+    else:
+        return jsonify({"msg": "Solamente el dj puede acceder a esta información"}), 401
+
+##Traer todas las cuentas de CLIENTE exístentes para el admin
+@app.route('/admin/accounts/clients', methods=['GET'])
+@jwt_required
+def getAllClientsAccounts():
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    if account.role_id == 1:
+        accounts = Account.query.filter_by(role_id=3).all()
+        accounts = list(map(lambda account: account.serialize(), accounts))
+        return jsonify(accounts), 201
+    else:
+        return jsonify({"msg": "Solamente el dj puede acceder a esta información"}), 401
+
+##Traer todas las cuentas de DJ exístentes para el admin
+@app.route('/admin/accounts/djs', methods=['GET'])
+@jwt_required
+def getAllDjsAccounts():
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    if account.role_id == 1:
+        accounts = Account.query.filter_by(role_id=2).all()
+        accounts = list(map(lambda account: account.serialize(), accounts))
+        return jsonify(accounts), 201
+    else:
+        return jsonify({"msg": "Solamente el dj puede acceder a esta información"}), 401
+
+##Traer Info general para Admin
+@app.route('/admin/accounts/info', methods=['GET'])
+@jwt_required
+def getInfo():
+    username = get_jwt_identity()
+    account = Account.query.filter_by(username=username).first()
+    if account.role_id == 1:
+        djAmount = Account.query.filter_by(role_id=2).count()
+        clientAmount = Account.query.filter_by(role_id=3).count()
+        lastTenDjs = Account.query.filter_by(role_id=2).order_by(Account.id.desc()).limit(10)
+        lastDjs = list(map(lambda account: account.serialize(), lastTenDjs))
+        lastTenClients = Account.query.filter_by(role_id=3).order_by(Account.id.desc()).limit(10)
+        lastClients = list(map(lambda account: account.serialize(), lastTenClients))
+        # clientsAccountsList = list(map(lambda account: account.serialize(), clientsAccounts))
+
+
+        data = {
+            "djs": djAmount,
+            "clients": clientAmount,
+            "lastdjs": lastDjs,
+            "lastclients": lastClients
+        }
+        return jsonify(data), 201
+    else:
+        return jsonify({"msg": "Solamente el dj puede acceder a esta información"}), 401
+
+
+#################### CONTRASEÑA USUARIO #####################################
 
 ## Actualizar contraseña de usuario al recuperar constraseña
 @app.route('/user/update/password', methods=['PUT'])
@@ -230,23 +337,27 @@ def updatePasswordFromAccount():
             return jsonify({"msg": "Clave antigua incorrecta"}), 401
     else:
         return jsonify({"msg": "No se pudo encontrar a este usuario"}), 401
-## Actualizar Email de cuenta de usuario (validar que no exista ya)
-@app.route('/user/update/email', methods=['PUT'])
-@jwt_required
-def updateEmail():
-    newemail = request.json.get("email")
-    username = get_jwt_identity()
-    account = Account.query.filter_by(username=username).first()
-    email = Account.query.filter_by(email=newemail).first()
-    if account:
-        if email:
-            return jsonify({"msg": "Email ya esta en uso"})
-        else:
-            account.email = newemail
-            account.update()
-            return jsonify(account.serialize())
-    else:
-        return jsonify({"msg": "Tienes que volver a logearte"}), 401
+
+# ## Actualizar Email de cuenta de usuario (validar que no exista ya)
+# @app.route('/user/update/email', methods=['PUT'])
+# @jwt_required
+# def updateEmail():
+#     newemail = request.json.get("email")
+#     username = get_jwt_identity()
+#     account = Account.query.filter_by(username=username).first()
+#     email = Account.query.filter_by(email=newemail).first()
+#     if account:
+#         if email:
+#             return jsonify({"msg": "Email ya esta en uso"})
+#         else:
+#             account.email = newemail
+#             account.update()
+#             return jsonify(account.serialize())
+#     else:
+#         return jsonify({"msg": "Tienes que volver a logearte"}), 401
+
+
+######################### LOGIN #############################
 
 #Chequear token del store
 @app.route('/user/autologin', methods=['POST'])
@@ -316,6 +427,9 @@ def logout():
     blacklist.add(jti)
     return jsonify({"msg": "Successfully logged out"}), 200
 
+
+############################### PERFILES ######################################
+
 ## actualizar perfil de DJ o de Cliente
 @app.route('/profile', methods=['PUT'])
 @jwt_required
@@ -353,22 +467,6 @@ def profile():
                 datos = request.json.get("datos")
                 
                 
-                # if not imagen:
-                #     return jsonify({"msg": "Se requiere una imagen del perfil"}), 400
-                # if not artista:
-                #     return jsonify({"msg": "Se requiere nombre de artista"}), 400
-                # if not ciudad:
-                #     return jsonify({"msg": "Se requiere que incluyas una ciudad de origen"}), 400
-                # if not pais:
-                #     return jsonify({"msg": "Se requiere que incluyas un pais de origen"}), 400
-                # if not generos:
-                #     return jsonify({"msg": "Se requiere que incluyas como minimo un genero"}), 400
-                # if not servicios:
-                #     return jsonify({"msg": "Se requiere que incluyas como minimo un servicio"}), 400
-                # if not tecnica:
-                #     return jsonify({"msg": "Se requiere que especifiques una técnica"}), 400
-                # if not status:
-                #     return jsonify({"msg": "Se requiere que se active el status de perfil"}), 400
 
 
                 #campos obligatorios
@@ -488,7 +586,17 @@ def getDjProfileWithUsername(usuario):
         if account.role_id == 1 or account.role_id == 2 or account.role_id == 3:
             djaccount = Account.query.filter_by(username=usuario).first()
             profile = DjProfile.query.filter_by(dj_id=djaccount.id).first()
-            return jsonify(profile.serialize()), 201
+            gigs = Gig.query.filter_by(dj_id=djaccount.id).filter_by(estado="Confirmado").all()
+            gigs = list(map(lambda gig: gig.gigsReducido(), gigs))
+            feedbacks = Feedback.query.filter_by(dj_id=djaccount.id).filter_by(rated_by_client=True).all()
+            feedbacks = list(map(lambda feedback: feedback.serializeForDj(), feedbacks))
+
+            data = {
+                "profile": profile.serialize(),
+                "gigs": gigs,
+                "feedbacks": feedbacks
+            }
+            return jsonify(data), 201
         else:
             return jsonify({"msg": "Porfavor iniciar session o crear cuenta para ver este contenido"}), 400
 
@@ -514,7 +622,15 @@ def getClientProfile(usuario):
         if account.role_id == 1 or account.role_id == 2 or account.role_id == 3:
             clientaccount = Account.query.filter_by(username=usuario).first()
             profile = ClientProfile.query.filter_by(client_id=clientaccount.id).first()
-            return jsonify(profile.serialize()), 201
+            feedbacks = Feedback.query.filter_by(client_id=clientaccount.id).filter_by(rated_by_dj=True).all()
+            feedbacks = list(map(lambda feedback: feedback.serializeForClient(), feedbacks))
+
+            data = {
+                "profile": profile.serialize(),
+                "feedbacks": feedbacks
+            }
+
+            return jsonify(data), 201
         else:
             return jsonify({"msg": "Porfavor iniciar session o crear cuenta para ver este contenido"}), 400
 
@@ -529,10 +645,10 @@ def profiles():
         return jsonify({"msg": "No hay perfiles activos"}), 401
 
 
-## ACA EN ADELANTE VIENEN LOS GIGGGSSSS
+########################################## GIGSSSSSSSSSSSSSS ###################################
 
 
-##Registar Gig
+##Registar Gig (Primer Booking)
 @app.route('/gig/register', methods=['POST'])
 @jwt_required
 def gigRegister():
@@ -559,6 +675,7 @@ def gigRegister():
             leido_por_dj = request.json.get("leido_por_dj", None)
             leido_por_cliente = request.json.get("leido_por_cliente", None)
             mensaje = request.json.get("mensaje", None)
+            artist_name = request.json.get("artist_name")
 
             gig = Gig()
             gig.client_id = client_id
@@ -581,10 +698,32 @@ def gigRegister():
             gig.leido_por_dj = leido_por_dj
             gig.leido_por_cliente = leido_por_cliente
             gig.mensaje = json.dumps(mensaje)
+            gig.artist_name = artist_name
             gig.save()
+
+            feedback = Feedback()
+            feedback.gig_id = gig.id
+            feedback.client_id = client_id
+            feedback.dj_id = dj_id
+            feedback.client_username = username_cliente
+            feedback.dj_username = username_dj
+            feedback.dia_evento = dia_evento
+            feedback.nombre_evento = nombre_evento
+            feedback.save()
+            send_aviso_booking(nombre_evento, username_cliente, username_dj, dj_id)
             return jsonify(gig.serialize()), 201
         else:
             return jsonify({"msg": "Solamente clientes pueden hacer booking"}), 401
+
+
+## Email aviso nuevo booking
+def send_aviso_booking(nombre_evento, username_cliente,username_dj,dj_id):
+    account = Account.query.filter_by(id=dj_id).first()
+    msg = Message(f"{username_cliente} quiere que toques en su evento!", recipients=[account.email])
+    msg.html = f"<h1>Hola {username_dj} !</h1><br><h3>El cliente {username_cliente} te quiere contratar para el evento {nombre_evento}, visita <a href='http://localhost:3000/'>chilegigs</a> para ver más detalles.</h3>"
+    mail.send(msg)
+    return jsonify({"exito": "Email enviado"}), 200
+
 
 
 ## Aactualizar un gig 
@@ -635,9 +774,21 @@ def gigUpdate(id):
             gig.leido_por_cliente = leido_por_cliente
             gig.mensaje = json.dumps(mensaje)
             gig.update()
+            if account.role_id == 3:
+                send_aviso_cambios(nombre_evento, username_dj)
+            if account.role_id == 2:
+                send_aviso_cambios(nombre_evento, username_cliente)
             return jsonify(gig.serialize()), 201
         else:
             return jsonify({"msg": "No tienes los permisos para hacer estos cambios"}), 401
+
+#Email aviso cambios en el booking
+def send_aviso_cambios(nombre_evento, username):
+    account = Account.query.filter_by(username=username).first()
+    msg = Message(f"Tienes un nuevo mensaje en el evento {nombre_evento} !", recipients=[account.email])
+    msg.html = f"<h1>Hola {username} !</h1><br><h3>Te han dejado un nuevo mensaje en el booking del evento {nombre_evento}, visita <a href='http://localhost:3000/'>chilegigs</a> para ver más detalles.</h3>"
+    mail.send(msg)
+    return jsonify({"exito": "Email enviado"}), 200
 
 ## Recibir un gig completo 
 @app.route('/gig/<int:id>', methods=['GET'])
@@ -647,12 +798,23 @@ def getGig(id):
         account = Account.query.filter_by(username=username).first()
         if account:
             gig = Gig.query.filter_by(id=id).first()
-            if gig.client_id == account.id or gig.dj_id == account.id or account.role_id == 1:
+            if gig.client_id == account.id:
+                gig.leido_por_cliente = True
+                gig.update()
+                return jsonify(gig.serialize()), 201
+            if gig.dj_id == account.id:
+                gig.leido_por_dj = True
+                gig.update()
+                return jsonify(gig.serialize()), 201
+            if account.role_id == 1:
                 return jsonify(gig.serialize()), 201
             else:
                 return jsonify({"msg": "No tienes permiso para acceder a la información de este gig"}), 201
         else:
             return jsonify({"msg": "No existe tu cuenta en nuestro registro"}), 401
+
+
+
 
 ## Recibir todos los gigs asociados al ID de una cuenta
 @app.route('/account/gig', methods=['GET'])
@@ -680,10 +842,67 @@ def getAllGigs():
         account = Account.query.filter_by(username=username).first() 
         if account.role_id == 1:
             gigs = Gig.query.all()
-            gigs = list(map(lambda gig: gig.serialize(), gigs))
+            gigs = list(map(lambda gig: gig.gigsReducido(), gigs))
             return jsonify(gigs), 201
         else:
             return jsonify({"msg": "Cuenta no tiene derechos sobre esta información"}), 401    
+
+
+############################### FEEDBACKS #############################
+
+
+## Registrar Feedback
+@app.route('/user/feedback', methods=['PUT'])
+@jwt_required
+def putFeedback():
+        username = get_jwt_identity()
+        account = Account.query.filter_by(username=username).first()
+        if account:
+            gig_id = request.json.get("gig_id", None)
+            message = request.json.get("message", None)
+            rating = request.json.get("rating", None)
+            feedback = Feedback.query.filter_by(gig_id=gig_id).first()
+            gig = Gig.query.filter_by(id=gig_id).first()
+            if feedback and gig:
+                if feedback.dj_id == account.id:
+                    clientprofile = ClientProfile.query.filter_by(client_id=feedback.client_id).first()
+                    clientprofile.suma_rating = clientprofile.suma_rating + rating
+                    clientprofile.contrataciones = clientprofile.contrataciones + 1
+                    clientprofile.update()
+                    feedback.by_dj_commentary = message
+                    feedback.by_dj_rating = rating
+                    feedback.rated_by_dj = True
+                    feedback.update()
+                    gig.feedback_dj = True
+                    if feedback.rated_by_client == True:
+                        gig.estado = "Terminado"
+                    gig.update()
+                    return jsonify(feedback.serialize()), 201
+                elif feedback.client_id == account.id:
+                    djprofile = DjProfile.query.filter_by(dj_id=feedback.dj_id).first()
+                    djprofile.suma_rating = djprofile.suma_rating + rating
+                    djprofile.contrataciones = djprofile.contrataciones + 1
+                    djprofile.update()
+                    feedback.by_client_commentary = message
+                    feedback.by_client_rating = rating
+                    feedback.rated_by_client = True
+                    feedback.update()
+                    gig.feedback_client = True
+                    if feedback.rated_by_dj == True:
+                        gig.estado = "Terminado"
+                    gig.update()
+                    return jsonify(feedback.serialize()), 201
+            else:
+                return jsonify({"msg": "Este feedback o gig ya no existe"}), 401
+        else:
+            return jsonify({"msg": "Usuario no esta autorizado para ejecer esta función"}), 401
+
+
+
+
+
+
+########## INICIAR ROLES Y OBJETOS GLOBALES AL LEVANTAR SERVER ##################################
 
 @manager.command
 def load_globales():
